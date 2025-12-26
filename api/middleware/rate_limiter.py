@@ -31,7 +31,17 @@ import time
 
 
 # Global limiter instance
-limiter = None
+# Initialize with a no-op limiter to prevent AttributeError when routes are imported
+# Will be replaced with real limiter when init_rate_limiter() is called
+class NoOpLimiter:
+    """No-op limiter for when rate limiting is disabled or not yet initialized"""
+    def limit(self, *args, **kwargs):
+        """Decorator that does nothing"""
+        def decorator(f):
+            return f
+        return decorator
+
+limiter = NoOpLimiter()
 
 
 def get_request_identifier():

@@ -8,18 +8,9 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from config.settings import settings
 from core.session.rotation import start_session_rotation
-from api.routes.transactions import transactions_bp
-from api.routes.auth import auth_bp
-from api.routes.accounts import accounts_bp
 from api.websocket.manager import init_websocket
 from core.workers.mining_worker import start_mining_worker
 from core.crypto.idx_generator import IDXGenerator
-from api.routes.bank_accounts import bank_accounts_bp
-from api.routes.recipients import recipients_bp
-from api.routes.court_orders import court_orders_bp
-from api.routes.travel_accounts import travel_accounts_bp
-from api.routes.mining import mining_bp
-from api.routes.audit import audit_bp
 from api.middleware.rate_limiter import init_rate_limiter
 from core.mining.mining_pool import start_mining_pool
 
@@ -27,7 +18,7 @@ from core.mining.mining_pool import start_mining_pool
 def create_app():
     """Create Flask application"""
     app = Flask(__name__)
-    
+
     # Config
     app.config['JSON_SORT_KEYS'] = False
     app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
@@ -43,8 +34,19 @@ def create_app():
         }
     })
 
-    # Initialize rate limiter (DDoS protection)
+    # Initialize rate limiter (DDoS protection) - MUST BE BEFORE route imports
     init_rate_limiter(app)
+
+    # Import blueprints AFTER rate limiter is initialized (FIX: prevents limiter=None error)
+    from api.routes.transactions import transactions_bp
+    from api.routes.auth import auth_bp
+    from api.routes.accounts import accounts_bp
+    from api.routes.bank_accounts import bank_accounts_bp
+    from api.routes.recipients import recipients_bp
+    from api.routes.court_orders import court_orders_bp
+    from api.routes.travel_accounts import travel_accounts_bp
+    from api.routes.mining import mining_bp
+    from api.routes.audit import audit_bp
     
     # Register blueprints
     app.register_blueprint(auth_bp)
@@ -169,4 +171,4 @@ if __name__ == '__main__':
     print("Press CTRL+C to stop")
     print("=" * 60 + "\n")
     
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
