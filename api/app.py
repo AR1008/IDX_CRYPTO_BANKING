@@ -47,7 +47,10 @@ def create_app():
     from api.routes.travel_accounts import travel_accounts_bp
     from api.routes.mining import mining_bp
     from api.routes.audit import audit_bp
-    
+    from api.routes.statements import statements_bp
+    from api.routes.admin import admin_bp
+    from api.routes.idx_registry import idx_registry_bp
+
     # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(accounts_bp)
@@ -58,6 +61,9 @@ def create_app():
     app.register_blueprint(travel_accounts_bp)
     app.register_blueprint(mining_bp)
     app.register_blueprint(audit_bp)
+    app.register_blueprint(statements_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(idx_registry_bp)
 
     # Start mining pool
     start_mining_pool()
@@ -96,13 +102,23 @@ def create_app():
     def root():
         return jsonify({
             'service': 'IDX Crypto Banking',
-            'version': '1.0.0',
+            'version': '2.0.0',
+            'description': 'Privacy-Preserving Crypto Banking with Three-Layer Identity',
             'endpoints': {
                 'auth': 'POST /api/auth/login',
                 'balance': 'GET /api/accounts/balance',
                 'send': 'POST /api/transactions/send',
+                'recipients': 'GET /api/recipients',
+                'statements': 'POST /api/statements/generate',
+                'admin_access': 'POST /api/admin/access/grant',
+                'idx_registry': 'POST /api/idx-registry/lookup',
                 'test': 'GET /test-event',
                 'websocket': 'ws://localhost:5000'
+            },
+            'security': {
+                'identity_layers': ['Session (Blockchain)', 'IDX (Accounting)', 'Real Name (Restricted)'],
+                'access_control': 'Company-controlled with time-limited tokens',
+                'audit_trail': 'All access logged'
             }
         }), 200
     

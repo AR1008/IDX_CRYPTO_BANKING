@@ -1,7 +1,0 @@
-Starting CodeRabbit review in plain text mode...
-
-Connecting to review service
-Setting up
-[2025-12-26T08:23:57.279Z] ❌ ERROR: Error: Rate limit exceeded, please try after 21 minutes and 36 seconds
-Failed to start review: Review failed
-[error] stopping cli

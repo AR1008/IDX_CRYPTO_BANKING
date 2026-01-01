@@ -17,7 +17,7 @@ Privacy Model:
 🔐 Session IDs: Link to blockchain (encrypted in private chain)
 """
 
-from sqlalchemy import Column, ForeignKey, Integer, String, Numeric, DateTime, Enum, Index
+from sqlalchemy import Column, ForeignKey, Integer, String, Numeric, DateTime, Enum, Index, Text
 from sqlalchemy.sql import func
 from datetime import datetime
 from decimal import Decimal
@@ -80,6 +80,24 @@ class Transaction(Base):
     # Primary key
     id = Column(Integer, primary_key=True, autoincrement=True)
     
+    # Sequence number (CRITICAL for replay attack prevention)
+    sequence_number = Column(
+        Integer,
+        unique=True,
+        nullable=False,
+        autoincrement=True,
+        index=True,
+        comment="Monotonically increasing sequence (prevents replay attacks)"
+    )
+
+    # Batch ID (for batch processing)
+    batch_id = Column(
+        String(50),
+        nullable=True,
+        index=True,
+        comment="Batch identifier for batch processing (100 txs/batch)"
+    )
+
     # Transaction hash (unique identifier for blockchain)
     # Format: SHA-256 hash of transaction data
     transaction_hash = Column(
@@ -149,6 +167,46 @@ class Transaction(Base):
         comment="Transaction type: DOMESTIC, TRAVEL_DEPOSIT, TRAVEL_WITHDRAWAL, TRAVEL_TRANSFER"
     )
 
+    # ===== CRYPTOGRAPHIC FIELDS (Advanced Privacy) =====
+
+    # Commitment (Zerocash-style) - hides transaction data on public chain
+    commitment = Column(
+        String(66),  # 0x + 64 hex chars
+        nullable=True,
+        index=True,
+        comment="Cryptographic commitment (hides all transaction data)"
+    )
+
+    # Nullifier (prevents double-spend)
+    nullifier = Column(
+        String(66),
+        unique=True,
+        nullable=True,
+        index=True,
+        comment="Unique nullifier (prevents double-spend attacks)"
+    )
+
+    # Range proof (proves balance ≥ amount without revealing either)
+    range_proof = Column(
+        Text,  # ~700 bytes as JSON
+        nullable=True,
+        comment="Zero-knowledge range proof (balance validation)"
+    )
+
+    # Group signature (anonymous bank voting)
+    group_signature = Column(
+        Text,
+        nullable=True,
+        comment="Group signature from sender's bank (anonymous)"
+    )
+
+    # Salt for commitment opening (stored encrypted in private chain)
+    commitment_salt = Column(
+        String(66),
+        nullable=True,
+        comment="Random salt for commitment opening (private chain only)"
+    )
+
     # Transaction status
     status = Column(
         Enum(TransactionStatus),
@@ -202,6 +260,11 @@ class Transaction(Base):
         Index('idx_tx_hash', 'transaction_hash'),       # Lookup by hash
         Index('idx_tx_sender_session', 'sender_session_id'),    # Session queries
         Index('idx_tx_receiver_session', 'receiver_session_id'), # Session queries
+        # Indexes for advanced cryptographic features
+        Index('idx_tx_sequence', 'sequence_number'),    # Sequence number lookups
+        Index('idx_tx_batch', 'batch_id'),              # Batch queries
+        Index('idx_tx_commitment', 'commitment'),       # Commitment lookups
+        Index('idx_tx_nullifier', 'nullifier'),         # Nullifier checks (double-spend)
     )
     
     def __repr__(self):

@@ -6,7 +6,7 @@ Purpose: Banks validate transactions and create private blockchain
 Flow:
 1. Get transactions from public chain
 2. Re-validate balances (catch double-spends)
-3. Banks vote (PBFT consensus - need 4/6)
+3. Banks vote (PBFT consensus - need 8/12)
 4. Create private blockchain block
 5. Distribute bank fees
 6. Complete transactions (update balances)
@@ -30,10 +30,10 @@ from config.settings import settings
 class BankValidator:
     """
     Bank validation service for private blockchain
-    
+
     Responsibilities:
     - Re-validate transactions (prevent double-spend)
-    - Achieve PBFT consensus (4/6 banks)
+    - Achieve PBFT consensus (8/12 banks)
     - Create private blockchain blocks
     - Distribute bank fees
     - Complete transactions atomically
@@ -80,7 +80,7 @@ class BankValidator:
         Flow:
         1. Get transactions from public block
         2. Group by transaction type (DOMESTIC vs TRAVEL_*)
-        3. Domestic transactions → 6-bank consortium consensus (4/6)
+        3. Domestic transactions → 12-bank consortium consensus (8/12)
         4. Travel transactions → 2-bank consensus (2/2 sender + receiver banks)
         5. Create private block with consensus data
 
@@ -241,13 +241,13 @@ class BankValidator:
 
     def _validate_domestic(self, transactions: List[Transaction], public_block_hash: str, accounts_dict: dict) -> Tuple[bool, List[Transaction]]:
         """
-        Validate domestic transactions with 6-bank consortium consensus
+        Validate domestic transactions with 12-bank consortium consensus
 
         Flow:
-        1. Get all 6 consortium banks
+        1. Get all 12 consortium banks
         2. Each bank validates all transactions
-        3. Need 4/6 approval (Byzantine fault tolerance)
-        4. Distribute bank fees equally (0.167% per bank)
+        3. Need 8/12 approval (Byzantine fault tolerance)
+        4. Distribute bank fees equally (1% ÷ 12 per bank)
 
         Args:
             transactions: Domestic transactions to validate
@@ -281,9 +281,9 @@ class BankValidator:
             status = "✅ APPROVED" if bank_approved else "❌ REJECTED"
             print(f"      {bank.bank_code}: {status}")
 
-        # Check consensus (need 4/6)
+        # Check consensus (need 8/12)
         approved_count = sum(1 for v in votes.values() if v)
-        required_votes = (len(consortium_banks) * 2) // 3 + 1  # 67% + 1 (4/6)
+        required_votes = (len(consortium_banks) * 2) // 3 + 1  # 67% + 1 (8/12)
 
         if approved_count < required_votes:
             print(f"   ❌ Consensus failed: {approved_count}/{len(consortium_banks)} (need {required_votes})")
@@ -291,7 +291,7 @@ class BankValidator:
 
         print(f"   ✅ Consensus achieved: {approved_count}/{len(consortium_banks)} banks approved")
 
-        # Distribute fees among consortium banks (1% total / 6 banks = 0.167% each)
+        # Distribute fees among consortium banks (1% total / 12 banks)
         successful_txs = [tx for tx in transactions if tx not in failed_txs]
         if successful_txs:
             total_bank_fees = sum(tx.bank_fee for tx in successful_txs)
@@ -494,16 +494,16 @@ class BankValidator:
         failed_transactions: List[Tuple[Transaction, str]]
     ) -> Tuple[bool, int]:
         """
-        Simulate PBFT consensus among 6 banks
+        Simulate PBFT consensus among 12 banks
         
         In production:
         - Each bank runs validator node
         - Banks vote independently
-        - Need 4/6 approval (67% Byzantine fault tolerance)
-        
+        - Need 8/12 approval (67% Byzantine fault tolerance)
+
         For now (Day 2):
         - Simulate votes based on validation results
-        - If all validations passed → 6/6 approve
+        - If all validations passed → 12/12 approve
         - If some failed → Depends on failure rate
         
         Args:
@@ -534,9 +534,9 @@ class BankValidator:
         else:
             # Banks approve (even if some transactions failed)
             approving_banks = len(banks)
-        
-        consensus_achieved = approving_banks >= 4  # Need 4/6
-        
+
+        consensus_achieved = approving_banks >= 8  # Need 8/12
+
         return consensus_achieved, approving_banks
     
     def _create_private_block(
