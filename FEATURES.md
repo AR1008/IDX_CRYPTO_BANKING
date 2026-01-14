@@ -1223,49 +1223,6 @@ AXIS Bank suspects invalid transaction:
 
 ---
 
-### 30. KYC/AML Compliance
-
-**Description**: Full Know Your Customer and Anti-Money Laundering compliance.
-
-**KYC Requirements**:
-- Full legal name
-- Date of birth
-- PAN (Permanent Account Number)
-- Residential address
-- Phone number and email
-- Government-issued ID scan
-- Biometric verification (fingerprint/face)
-
-**Verification Process**:
-1. User submits documents
-2. AI verifies document authenticity
-3. PAN validated with government database
-4. Biometric verification
-5. Manual review for high-risk cases
-6. Approval or rejection within 24 hours
-
-**AML Features**:
-- Transaction monitoring (rule-based multi-factor scoring)
-- Suspicious activity detection
-- Automated alerts for large transactions
-- Pattern recognition (structuring, smurfing)
-- Watchlist screening
-- Regulatory reporting (FIU)
-
-**Benefits**:
-- **Compliance**: Meets RBI/PMLA requirements
-- **Security**: Prevents identity theft
-- **Trust**: Verified users only
-- **Protection**: Early fraud detection
-
-**Privacy Protection**:
-- KYC data encrypted at rest
-- Accessible only for verification
-- Not shared with third parties (except court orders)
-- GDPR compliant (data rights)
-
----
-
 ### 31. Audit Trail
 
 **Description**: Comprehensive immutable audit log of all system activities.
