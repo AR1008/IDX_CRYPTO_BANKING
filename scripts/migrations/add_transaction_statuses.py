@@ -1,6 +1,5 @@
 """
 Add New Transaction Statuses
-Author: Ashutosh Rajesh
 Purpose: Add AWAITING_RECEIVER and REJECTED to transaction status enum
 """
 

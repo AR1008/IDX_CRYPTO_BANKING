@@ -1,6 +1,5 @@
 """
 Court Orders API Routes
-Author: Ashutosh Rajesh
 Purpose: Court order endpoints (admin/judge access)
 
 Security:

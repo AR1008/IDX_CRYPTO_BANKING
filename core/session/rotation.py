@@ -1,6 +1,5 @@
 """
 Session Auto-Rotation Worker
-Author: Ashutosh Rajesh
 Purpose: Automatically rotate expired sessions every 24 hours
 
 Flow:

@@ -1,6 +1,5 @@
 """
 Forex Rate Model
-Author: Ashutosh Rajesh
 Purpose: Exchange rates for currency conversion
 
 Rates updated daily (in production: via API like exchangerate-api.com)

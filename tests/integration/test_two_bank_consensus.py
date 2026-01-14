@@ -1,6 +1,5 @@
 """
 Test Two-Bank Consensus Flow
-Author: Ashutosh Rajesh
 Purpose: Test complete flow with sender's bank + receiver's bank in consensus
 
 Flow:

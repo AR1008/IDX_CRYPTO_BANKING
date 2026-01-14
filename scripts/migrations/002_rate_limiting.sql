@@ -1,6 +1,5 @@
 -- Migration 002: Rate Limiting & DDoS Protection
 -- Purpose: Add IP blocking and rate limit violation tracking
--- Author: Ashutosh Rajesh
 -- Date: 2025-12-26
 
 -- Table: blocked_ips

@@ -1,6 +1,5 @@
 """
 Accounts Routes
-Author: Ashutosh Rajesh
 Purpose: User account information endpoints
 
 Endpoints:

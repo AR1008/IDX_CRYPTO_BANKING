@@ -1,6 +1,5 @@
 -- Migration 005: Foreign Bank Consensus
 -- Purpose: Enable foreign banks to validate travel account transactions
--- Author: Ashutosh Rajesh
 -- Date: 2025-12-26
 
 -- Add transaction_type column to transactions table

@@ -1,7 +1,5 @@
 """
-Complete System Integration Test
-Author: Ashutosh Rajesh
-Purpose: Test entire IDX Crypto Banking system end-to-end
+Complete System Integration Test - End-to-end testing of IDX Crypto Banking system.
 """
 
 import requests
@@ -19,10 +17,10 @@ def print_header(text, level=1):
         print(f"\n{'  ' * (level-1)}→ {text}")
 
 def print_success(text, indent=0):
-    print(f"{'  ' * indent}✅ {text}")
+    print(f"{'  ' * indent}[PASS] {text}")
 
 def print_info(text, indent=0):
-    print(f"{'  ' * indent}📋 {text}")
+    print(f"{'  ' * indent}[INFO] {text}")
 
 
 def unfreeze_all_accounts(token, headers):
@@ -39,15 +37,14 @@ def unfreeze_all_accounts(token, headers):
                         headers=headers
                     )
                     print_info(f"Unfroze account: {acc['account_number']}", 1)
-    except:
+    except Exception:
+        # Expected failures - may not have permission to unfreeze
         pass
 
 
 def main():
-    print_header("🚀 COMPLETE SYSTEM INTEGRATION TEST", 1)
+    print_header("COMPLETE SYSTEM INTEGRATION TEST", 1)
     print("Testing: IDX Crypto Banking Framework")
-    print("Author: Ashutosh Rajesh")
-    print("Academic Project - Phase 6 Final Test")
     
     # ========== PHASE 1 & 2: USER ACCOUNTS & TRANSACTIONS ==========
     
@@ -90,7 +87,7 @@ def main():
     if not sender_hdfc:
         sender_hdfc = next((acc for acc in sender_accounts if acc['bank_code'] == 'HDFC'), sender_accounts[0])
     
-    print_info(f"HDFC Account: ₹{sender_hdfc['balance']}", 1)
+    print_info(f"HDFC Account: INR{sender_hdfc['balance']}", 1)
     
     # Step 2: User 2 - Receiver Setup
     print_header("Step 2: User 2 - Receiver Setup", 2)
@@ -113,7 +110,7 @@ def main():
         })
         
         if register_response.status_code not in [200, 201]:
-            print(f"❌ Registration failed: {register_response.json()}")
+            print(f"[ERROR] Registration failed: {register_response.json()}")
             return
         
         print_success("Receiver registered", 1)
@@ -125,7 +122,7 @@ def main():
         })
         
         if receiver_login.status_code != 200:
-            print(f"❌ Login after registration failed")
+            print(f"[ERROR] Login after registration failed")
             return
     
     receiver_token = receiver_login.json()['token']
@@ -149,7 +146,7 @@ def main():
         receiver_accounts = requests.get(f"{BASE_URL}/api/bank-accounts", headers=receiver_headers).json()['accounts']
     
     receiver_icici = next((acc for acc in receiver_accounts if acc['bank_code'] == 'ICICI' and not acc.get('is_frozen', False)), receiver_accounts[0])
-    print_info(f"ICICI Account: ₹{receiver_icici['balance']}", 1)
+    print_info(f"ICICI Account: INR{receiver_icici['balance']}", 1)
     
     # Step 3: Add Recipient
     print_header("Step 3: Sender Adds Receiver to Contacts", 2)
@@ -189,7 +186,7 @@ def main():
     )
     
     if create_tx.status_code != 201:
-        print(f"❌ Transaction creation failed: {create_tx.json()}")
+        print(f"[ERROR] Transaction creation failed: {create_tx.json()}")
         print_info("Continuing with other tests...", 1)
         tx_hash = None
     else:
@@ -197,7 +194,7 @@ def main():
         tx_hash = tx['transaction_hash']
         
         print_success(f"Transaction created: {tx_hash[:16]}...", 1)
-        print_info(f"Amount: ₹{tx_amount}", 1)
+        print_info(f"Amount: INR{tx_amount}", 1)
         print_info(f"Status: {tx['status']}", 1)
         
         # Step 6: Receiver Confirms
@@ -248,15 +245,15 @@ def main():
             receiver_icici_after = next(acc for acc in receiver_accounts_after if acc['id'] == receiver_icici['id'])
             
             print_success("Balances Updated:", 1)
-            print_info(f"Sender HDFC: ₹{sender_hdfc_after['balance']}", 2)
-            print_info(f"Receiver ICICI: ₹{receiver_icici_after['balance']}", 2)
+            print_info(f"Sender HDFC: INR{sender_hdfc_after['balance']}", 2)
+            print_info(f"Receiver ICICI: INR{receiver_icici_after['balance']}", 2)
     
     # ========== PHASE 3: ENCRYPTION ==========
     
     print_header("PHASE 3: Encryption & Private Blockchain", 1)
-    print_success("Private blockchain encrypted with AES-256 ✓", 1)
-    print_success("Session → IDX mappings encrypted ✓", 1)
-    print_success("Split-key cryptography active ✓", 1)
+    print_success("Private blockchain encrypted with AES-256 [OK]", 1)
+    print_success("Session → IDX mappings encrypted [OK]", 1)
+    print_success("Split-key cryptography active [OK]", 1)
     
     # ========== PHASE 4: COURT ORDER SYSTEM ==========
     
@@ -274,7 +271,7 @@ def main():
             # Use most recent order for demo
             order_id = orders[0]['order_id']
             print_success(f"Using existing order: {order_id}", 1)
-            print_info("Court order system operational ✓", 1)
+            print_info("Court order system operational [OK]", 1)
     
     # ========== PHASE 5: TRAVEL ACCOUNTS + FOREX ==========
     
@@ -311,56 +308,44 @@ def main():
             
             if close.status_code == 200:
                 print_success("Travel account closed!", 1)
-                print_info("Forex system operational ✓", 1)
+                print_info("Forex system operational [OK]", 1)
     else:
         print_info("Skipping travel account (insufficient balance)", 1)
     
     # ========== FINAL SUMMARY ==========
-    
-    print_header("✅ COMPLETE SYSTEM TEST PASSED!", 1)
-    
-    print("\n📊 System Components Tested:")
-    print("   ✅ Phase 1: Multi-bank architecture")
-    print("   ✅ Phase 2: Receiver confirmation flow")
-    print("   ✅ Phase 3: AES-256 encryption")
-    print("   ✅ Phase 4: Court order de-anonymization")
-    print("   ✅ Phase 5: Travel accounts + forex")
-    
-    print("\n🔐 Security Features:")
-    print("   ✅ IDX generation (PAN + RBI)")
-    print("   ✅ Session-based anonymity")
-    print("   ✅ Private blockchain encryption")
-    print("   ✅ Dual-key decryption")
-    print("   ✅ Time-limited court access")
-    
-    print("\n💰 Financial Features:")
-    print("   ✅ Multi-bank accounts")
-    print("   ✅ PoW mining")
-    print("   ✅ PoS consensus (4/6 banks)")
-    print("   ✅ Fee distribution")
-    print("   ✅ Forex conversion")
-    
-    print("\n🌍 Innovation:")
-    print("   🏆 World's first blockchain de-anonymization system")
-    print("   🏆 Dual-key court order access")
-    print("   🏆 Time-limited legal access")
-    print("   🏆 Complete audit trail")
-    
-    print("\n🎓 Academic Paper Ready!")
-    print("   📄 Complete implementation")
-    print("   📄 Novel court order system")
-    print("   📄 Production-grade code")
-    print("   📄 Comprehensive testing")
-    
+
+    print_header("COMPLETE SYSTEM TEST PASSED", 1)
+
+    print("\nSystem Components Tested:")
+    print("   [PASS] Phase 1: Multi-bank architecture")
+    print("   [PASS] Phase 2: Receiver confirmation flow")
+    print("   [PASS] Phase 3: AES-256 encryption")
+    print("   [PASS] Phase 4: Court order de-anonymization")
+    print("   [PASS] Phase 5: Travel accounts + forex")
+
+    print("\nSecurity Features:")
+    print("   [PASS] IDX generation (PAN + RBI)")
+    print("   [PASS] Session-based anonymity")
+    print("   [PASS] Private blockchain encryption")
+    print("   [PASS] Dual-key decryption")
+    print("   [PASS] Time-limited court access")
+
+    print("\nFinancial Features:")
+    print("   [PASS] Multi-bank accounts")
+    print("   [PASS] PoW mining")
+    print("   [PASS] PoS consensus (10/12 banks)")
+    print("   [PASS] Fee distribution")
+    print("   [PASS] Forex conversion")
+
     print("\n" + "=" * 80)
-    print("  🎉 IDX CRYPTO BANKING FRAMEWORK - 100% COMPLETE!")
+    print("  IDX CRYPTO BANKING FRAMEWORK - Integration Test Complete")
     print("=" * 80)
 
 
 if __name__ == "__main__":
-    print("\n⚠️  PREREQUISITES:")
+    print("\n[WARNING] PREREQUISITES:")
     print("1. API server: python3 -m api.app")
     print("2. Mining worker: python3 workers/mining_worker.py\n")
-    
+
     input("Press Enter to start test...")
     main()

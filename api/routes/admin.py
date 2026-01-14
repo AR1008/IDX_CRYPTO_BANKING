@@ -16,7 +16,7 @@ Endpoints:
 """
 
 from flask import Blueprint, request, jsonify
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import uuid
 import json
@@ -132,7 +132,7 @@ def grant_access(current_user, db):
             granted_by=current_user.idx,
             purpose=data['purpose'],
             scope=json.dumps(data.get('scope')) if data.get('scope') else None,
-            expires_at=datetime.now() + timedelta(days=duration_days)
+            expires_at=datetime.now(timezone.utc) + timedelta(days=duration_days)
         )
 
         db.add(token)
@@ -221,7 +221,7 @@ def revoke_access(current_user, db):
 
         # Revoke
         token.is_active = False
-        token.revoked_at = datetime.now()
+        token.revoked_at = datetime.now(timezone.utc)
         token.revoked_by = current_user.idx
         db.commit()
 

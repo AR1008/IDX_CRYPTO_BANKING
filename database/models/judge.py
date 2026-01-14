@@ -1,6 +1,5 @@
 """
 Judge Authorization Model
-Author: Ashutosh Rajesh
 Purpose: Pre-authorized judges for court orders
 
 Only judges in this database can:

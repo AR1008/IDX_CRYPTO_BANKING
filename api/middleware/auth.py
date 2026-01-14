@@ -1,6 +1,5 @@
 """
 JWT Authentication Middleware
-Author: Ashutosh Rajesh
 Purpose: Protect API endpoints with JWT tokens
 
 Flow:

@@ -1,6 +1,5 @@
 """
 Session Management Service
-Author: Ashutosh Rajesh
 Purpose: Create and manage bank-specific sessions
 
 Session Flow:

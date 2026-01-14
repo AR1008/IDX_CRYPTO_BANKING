@@ -1,6 +1,5 @@
 """
 Private Chain Encryption Service
-Author: Ashutosh Rajesh
 Purpose: Encrypt/decrypt private blockchain data
 
 Private Chain Contents (Encrypted):

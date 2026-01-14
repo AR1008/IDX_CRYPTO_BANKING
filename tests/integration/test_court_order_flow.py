@@ -1,6 +1,5 @@
 """
 Complete Court Order System Test
-Author: Ashutosh Rajesh
 Purpose: Test entire court order flow end-to-end
 
 Flow Tested:

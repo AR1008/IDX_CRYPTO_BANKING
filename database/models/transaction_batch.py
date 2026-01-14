@@ -1,6 +1,5 @@
 """
 Transaction Batch Model
-Author: Ashutosh Rajesh
 Purpose: High-performance batch processing
 
 Batching Strategy:

@@ -1,44 +1,8 @@
 """
-Dynamic Accumulator
-Author: Ashutosh Rajesh
-Purpose: O(1) membership checks for account validation
+Dynamic Accumulator - O(1) membership checks with 256-bit compact representation.
 
-How it works:
-1. Accumulator = single 256-bit value representing entire set
-2. Add element: accumulator' = Hash(accumulator || element)
-3. Remove element: recompute from remaining elements
-4. Membership proof: O(1) verification
-
-Uses:
-- Account existence checks (20x faster)
-- Blacklist/whitelist management
-- Transaction deduplication
-- Nullifier set for double-spend prevention
-
-Implementation:
-- Hash-based accumulator (simpler than RSA)
-- Merkle-tree backed for efficient proofs
-- Supports add/remove/verify operations
-
-Security Properties:
-✅ Collision resistance: Can't fake membership
-✅ Compact: 256 bits regardless of set size
-✅ Fast: O(1) add, O(1) verify
-✅ Dynamic: Can add/remove elements
-
-Example:
-    >>> # Initialize accumulator
-    >>> acc = DynamicAccumulator()
-    >>>
-    >>> # Add accounts
-    >>> acc.add("IDX_ABC123")
-    >>> acc.add("IDX_XYZ789")
-    >>>
-    >>> # Check membership (O(1))
-    >>> acc.is_member("IDX_ABC123")
-    True
-    >>> acc.is_member("IDX_NOTFOUND")
-    False
+Hash-based accumulator for account validation, blacklist management, and double-spend prevention.
+Supports add/remove/verify operations with constant-size proof.
 """
 
 import hashlib
@@ -47,23 +11,10 @@ from typing import Set, Dict, Any, Optional, List
 
 
 class DynamicAccumulator:
-    """
-    Dynamic Cryptographic Accumulator
-
-    Maintains a set of elements with:
-    - O(1) membership verification
-    - O(1) element addition
-    - O(log n) element removal
-    - 256-bit compact representation
-    """
+    """Dynamic cryptographic accumulator with O(1) membership verification and 256-bit compact representation."""
 
     def __init__(self, initial_value: Optional[str] = None):
-        """
-        Initialize accumulator
-
-        Args:
-            initial_value: Optional initial accumulator value
-        """
+        """Initialize accumulator with optional initial value."""
         # Current accumulator value (256-bit hash)
         if initial_value:
             self.accumulator = initial_value
@@ -81,18 +32,7 @@ class DynamicAccumulator:
         self.count = 0
 
     def _hash_accumulate(self, current: str, element: str) -> str:
-        """
-        Hash function for accumulator updates
-
-        accumulator' = Hash(current_accumulator || element)
-
-        Args:
-            current: Current accumulator value
-            element: Element to add
-
-        Returns:
-            str: New accumulator value
-        """
+        """Hash function for accumulator updates: accumulator' = Hash(current || element)."""
         data = json.dumps({
             'accumulator': current,
             'element': element
@@ -102,24 +42,7 @@ class DynamicAccumulator:
         return '0x' + new_accumulator
 
     def add(self, element: str) -> str:
-        """
-        Add element to accumulator
-
-        O(1) operation
-
-        Args:
-            element: Element to add (e.g., IDX, account number)
-
-        Returns:
-            str: New accumulator value
-
-        Example:
-            >>> acc = DynamicAccumulator()
-            >>> acc.add("IDX_ABC123")
-            '0x...'
-            >>> acc.count
-            1
-        """
+        """Add element to accumulator in O(1) time. Returns new accumulator value."""
         # Check if already in set
         if element in self.elements:
             return self.accumulator  # No change
@@ -134,29 +57,7 @@ class DynamicAccumulator:
         return self.accumulator
 
     def remove(self, element: str) -> str:
-        """
-        Remove element from accumulator
-
-        O(n) operation - recomputes accumulator from scratch
-
-        Args:
-            element: Element to remove
-
-        Returns:
-            str: New accumulator value
-
-        Raises:
-            ValueError: If element not in accumulator
-
-        Example:
-            >>> acc = DynamicAccumulator()
-            >>> acc.add("IDX_ABC")
-            >>> acc.add("IDX_XYZ")
-            >>> acc.remove("IDX_ABC")
-            '0x...'
-            >>> acc.count
-            1
-        """
+        """Remove element from accumulator in O(n) time (recomputes from scratch). Returns new accumulator value."""
         if element not in self.elements:
             raise ValueError(f"Element not in accumulator: {element}")
 
@@ -177,49 +78,11 @@ class DynamicAccumulator:
         return self.accumulator
 
     def is_member(self, element: str) -> bool:
-        """
-        Check if element is in accumulator
-
-        O(1) operation (set lookup)
-
-        Args:
-            element: Element to check
-
-        Returns:
-            bool: True if element is in accumulator
-
-        Example:
-            >>> acc = DynamicAccumulator()
-            >>> acc.add("IDX_TEST")
-            >>> acc.is_member("IDX_TEST")
-            True
-            >>> acc.is_member("IDX_NOTFOUND")
-            False
-        """
+        """Check if element is in accumulator in O(1) time. Returns True if present."""
         return element in self.elements
 
     def create_membership_proof(self, element: str) -> Dict[str, Any]:
-        """
-        Create membership proof for element
-
-        Proof shows element is in accumulator without revealing other elements
-
-        Args:
-            element: Element to prove membership of
-
-        Returns:
-            dict: Membership proof
-
-        Raises:
-            ValueError: If element not in accumulator
-
-        Example:
-            >>> acc = DynamicAccumulator()
-            >>> acc.add("IDX_TEST")
-            >>> proof = acc.create_membership_proof("IDX_TEST")
-            >>> 'accumulator' in proof
-            True
-        """
+        """Create membership proof for element without revealing other elements. Returns proof dict."""
         if not self.is_member(element):
             raise ValueError(f"Element not in accumulator: {element}")
 
@@ -238,23 +101,7 @@ class DynamicAccumulator:
         proof: Dict[str, Any],
         current_accumulator: Optional[str] = None
     ) -> bool:
-        """
-        Verify membership proof
-
-        Args:
-            proof: Membership proof to verify
-            current_accumulator: Current accumulator value (uses self if None)
-
-        Returns:
-            bool: True if proof is valid
-
-        Example:
-            >>> acc = DynamicAccumulator()
-            >>> acc.add("IDX_TEST")
-            >>> proof = acc.create_membership_proof("IDX_TEST")
-            >>> acc.verify_membership_proof(proof)
-            True
-        """
+        """Verify membership proof. Returns True if proof is valid."""
         try:
             element = proof['element']
             proof_accumulator = proof['accumulator']
@@ -274,20 +121,7 @@ class DynamicAccumulator:
             return False
 
     def get_state(self) -> Dict[str, Any]:
-        """
-        Get current accumulator state
-
-        Returns:
-            dict: Accumulator state
-
-        Example:
-            >>> acc = DynamicAccumulator()
-            >>> acc.add("IDX_1")
-            >>> acc.add("IDX_2")
-            >>> state = acc.get_state()
-            >>> state['count']
-            2
-        """
+        """Get current accumulator state. Returns dict with accumulator, count, and elements."""
         return {
             'accumulator': self.accumulator,
             'count': self.count,
@@ -295,22 +129,7 @@ class DynamicAccumulator:
         }
 
     def load_state(self, state: Dict[str, Any]) -> None:
-        """
-        Load accumulator state
-
-        Args:
-            state: State to load
-
-        Example:
-            >>> acc1 = DynamicAccumulator()
-            >>> acc1.add("IDX_TEST")
-            >>> state = acc1.get_state()
-            >>>
-            >>> acc2 = DynamicAccumulator()
-            >>> acc2.load_state(state)
-            >>> acc2.count
-            1
-        """
+        """Load accumulator state from dict."""
         self.accumulator = state['accumulator']
         self.count = state['count']
         self.elements = set(state['elements'])
@@ -332,7 +151,7 @@ if __name__ == "__main__":
     print(f"  Initial accumulator: {acc.accumulator[:20]}...")
     print(f"  Count: {acc.count}")
     assert acc.count == 0
-    print("  ✅ Test 1 passed!\n")
+    print("  [PASS] Test 1 passed!\n")
 
     # Test 2: Add elements
     print("Test 2: Add Elements")
@@ -344,7 +163,7 @@ if __name__ == "__main__":
     print(f"  Accumulator: {acc.accumulator[:20]}...")
     print(f"  Count: {acc.count}")
     assert acc.count == 3
-    print("  ✅ Test 2 passed!\n")
+    print("  [PASS] Test 2 passed!\n")
 
     # Test 3: Membership check
     print("Test 3: Membership Checks")
@@ -359,7 +178,7 @@ if __name__ == "__main__":
     assert is_member1 == True
     assert is_member2 == True
     assert is_not_member == False
-    print("  ✅ Test 3 passed!\n")
+    print("  [PASS] Test 3 passed!\n")
 
     # Test 4: Remove element
     print("Test 4: Remove Element")
@@ -374,7 +193,7 @@ if __name__ == "__main__":
     assert acc.count == 2
     assert not acc.is_member("IDX_ABC123")
     assert acc.accumulator != old_accumulator
-    print("  ✅ Test 4 passed!\n")
+    print("  [PASS] Test 4 passed!\n")
 
     # Test 5: Membership proof
     print("Test 5: Create and Verify Membership Proof")
@@ -388,7 +207,7 @@ if __name__ == "__main__":
     print(f"  Proof valid: {is_valid}")
 
     assert is_valid == True
-    print("  ✅ Test 5 passed!\n")
+    print("  [PASS] Test 5 passed!\n")
 
     # Test 6: Duplicate add (should not increase count)
     print("Test 6: Duplicate Add")
@@ -400,7 +219,7 @@ if __name__ == "__main__":
     print(f"  Count after: {acc.count}")
 
     assert acc.count == old_count
-    print("  ✅ Test 6 passed!\n")
+    print("  [PASS] Test 6 passed!\n")
 
     # Test 7: Save and load state
     print("Test 7: Save and Load State")
@@ -416,7 +235,7 @@ if __name__ == "__main__":
 
     assert acc.accumulator == acc2.accumulator
     assert acc.count == acc2.count
-    print("  ✅ Test 7 passed!\n")
+    print("  [PASS] Test 7 passed!\n")
 
     # Test 8: Performance test (O(1) membership)
     print("Test 8: Performance Test (1000 elements)")
@@ -439,7 +258,7 @@ if __name__ == "__main__":
     print(f"  100 membership checks in {check_time*1000:.2f}ms")
     print(f"  Average check time: {check_time*1000/100:.4f}ms")
     print(f"  Accumulator size: {len(perf_acc.accumulator)} bytes (constant!)")
-    print("  ✅ Test 8 passed!\n")
+    print("  [PASS] Test 8 passed!\n")
 
     # Test 9: Deterministic accumulator
     print("Test 9: Deterministic Accumulator")
@@ -460,24 +279,8 @@ if __name__ == "__main__":
     # Note: Order matters in this implementation
     # For production, could sort elements before accumulating
     assert acc1.accumulator == acc2.accumulator
-    print("  ✅ Test 9 passed!\n")
+    print("  [PASS] Test 9 passed!\n")
 
     print("=" * 50)
-    print("✅ All Dynamic Accumulator tests passed!")
+    print("[PASS] All Dynamic Accumulator tests passed!")
     print("=" * 50)
-    print()
-    print("Key Features Demonstrated:")
-    print("  • O(1) element addition")
-    print("  • O(1) membership verification")
-    print("  • Compact representation (256 bits)")
-    print("  • Membership proofs")
-    print("  • State save/load")
-    print("  • Deterministic accumulation")
-    print("  • High performance (1000+ elements/second)")
-    print()
-    print("Use Cases:")
-    print("  • Account existence validation (20x faster)")
-    print("  • Blacklist/whitelist management")
-    print("  • Nullifier set (double-spend prevention)")
-    print("  • Transaction deduplication")
-    print()

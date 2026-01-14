@@ -1,6 +1,5 @@
 """
 Comprehensive Security Features Integration Test
-Author: Ashutosh Rajesh
 Purpose: Test all security and governance features together
 
 Tests:

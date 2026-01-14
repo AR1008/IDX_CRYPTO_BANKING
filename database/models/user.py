@@ -56,6 +56,7 @@ class User(Base):
     __tablename__ = 'users'
     # NEW RELATIONSHIPS - Add these at the end of User class
     bank_accounts = relationship("BankAccount", back_populates="user", cascade="all, delete-orphan")
+    freeze_records = relationship("FreezeRecord", back_populates="user", cascade="all, delete-orphan")
     #recipients = relationship("Recipient", foreign_keys="Recipient.user_idx", back_populates="owner", cascade="all, delete-orphan")
     # Primary key (auto-increment)
     id = Column(Integer, primary_key=True, autoincrement=True)

@@ -1,6 +1,5 @@
 """
 RBI Validator - Independent Transaction Re-Verification
-Author: Ashutosh Rajesh
 Purpose: Re-verify batches to detect malicious bank behavior and enforce slashing
 
 RBI Role:
@@ -45,6 +44,7 @@ from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 import random
 import json
+from sqlalchemy.orm import joinedload, selectinload
 
 
 class RBIValidator:
@@ -125,7 +125,7 @@ class RBIValidator:
 
         return selected
 
-    def validate_transaction(self, tx: Transaction) -> bool:
+    def validate_transaction(self, tx: Transaction, sender_account: BankAccount = None, receiver_account: BankAccount = None) -> bool:
         """
         Independently validate a single transaction
 
@@ -137,18 +137,22 @@ class RBIValidator:
 
         Args:
             tx: Transaction to validate
+            sender_account: Pre-loaded sender account (optional, for N+1 prevention)
+            receiver_account: Pre-loaded receiver account (optional, for N+1 prevention)
 
         Returns:
             bool: True if valid, False otherwise
         """
-        # Get sender and receiver accounts
-        sender_account = self.db.query(BankAccount).filter(
-            BankAccount.id == tx.sender_account_id
-        ).first()
+        # Get sender and receiver accounts (if not provided)
+        if sender_account is None:
+            sender_account = self.db.query(BankAccount).filter(
+                BankAccount.id == tx.sender_account_id
+            ).first()
 
-        receiver_account = self.db.query(BankAccount).filter(
-            BankAccount.id == tx.receiver_account_id
-        ).first()
+        if receiver_account is None:
+            receiver_account = self.db.query(BankAccount).filter(
+                BankAccount.id == tx.receiver_account_id
+            ).first()
 
         # Basic checks
         if not sender_account or not receiver_account:
@@ -177,8 +181,11 @@ class RBIValidator:
 
         Returns:
             bool: True if ALL transactions valid, False if ANY invalid
+
+        Performance: Uses eager loading to prevent N+1 queries
         """
-        # Get all transactions in batch
+        # Get all transactions in batch with eager loading of sender/receiver accounts
+        # This prevents N+1 query problem: loads all accounts in one query
         transactions = self.db.query(Transaction).filter(
             Transaction.batch_id == batch.batch_id
         ).all()
@@ -186,9 +193,28 @@ class RBIValidator:
         if not transactions:
             return False
 
-        # Validate each transaction
+        # Build lookup maps for accounts (to avoid repeated queries)
+        account_ids = set()
         for tx in transactions:
-            if not self.validate_transaction(tx):
+            if tx.sender_account_id:
+                account_ids.add(tx.sender_account_id)
+            if tx.receiver_account_id:
+                account_ids.add(tx.receiver_account_id)
+
+        # Load all accounts in ONE query (prevents N+1 problem)
+        accounts_dict = {}
+        if account_ids:
+            accounts = self.db.query(BankAccount).filter(
+                BankAccount.id.in_(account_ids)
+            ).all()
+            accounts_dict = {acc.id: acc for acc in accounts}
+
+        # Validate each transaction with pre-loaded accounts
+        for tx in transactions:
+            sender_account = accounts_dict.get(tx.sender_account_id)
+            receiver_account = accounts_dict.get(tx.receiver_account_id)
+
+            if not self.validate_transaction(tx, sender_account, receiver_account):
                 print(f"    ❌ Invalid transaction: {tx.transaction_hash[:16]}...")
                 return False
 
@@ -297,6 +323,13 @@ class RBIValidator:
         print(f"\n    RBI Verdict: {'VALID' if is_valid else 'INVALID'}")
         print(f"    Checking {len(votes)} bank votes...")
 
+        # Pre-load all banks in ONE query (prevents N+1 problem)
+        bank_codes = [vote.bank_code for vote in votes]
+        banks_list = self.db.query(Bank).filter(
+            Bank.bank_code.in_(bank_codes)
+        ).all()
+        banks_dict = {bank.bank_code: bank for bank in banks_list}
+
         slashed_count = 0
         correct_count = 0
 
@@ -310,10 +343,8 @@ class RBIValidator:
             vote.rbi_verified = True
             vote.rbi_verification_time = datetime.now(timezone.utc)
 
-            # Get bank
-            bank = self.db.query(Bank).filter(
-                Bank.bank_code == vote.bank_code
-            ).first()
+            # Get bank from pre-loaded dict (no additional query)
+            bank = banks_dict.get(vote.bank_code)
 
             if not bank:
                 continue

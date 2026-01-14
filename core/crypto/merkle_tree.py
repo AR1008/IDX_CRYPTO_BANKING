@@ -1,29 +1,8 @@
 """
-Merkle Tree Implementation
-Author: Ashutosh Rajesh
-Purpose: Enable parallel transaction validation by 12 banks
+Merkle Tree Implementation - Binary tree for parallel transaction validation.
 
-How It Works:
-1. Build binary tree from transaction hashes (bottom-up)
-2. Each parent = Hash(left_child + right_child)
-3. Root hash represents entire batch
-4. Proofs are O(log n) - only need sibling hashes
-
-Benefits:
-✅ 5.9x faster validation (parallel)
-✅ 320-byte proofs instead of 10 MB
-✅ Mobile verification possible
-✅ Industry standard (Bitcoin, Ethereum)
-
-Example Usage:
-    >>> transactions = [tx1, tx2, tx3, tx4]
-    >>> tree = MerkleTree(transactions)
-    >>> root = tree.get_root()  # Single hash representing all 4 txs
-    >>>
-    >>> # Prove tx2 is in tree
-    >>> proof = tree.get_proof(1)  # Index 1 = tx2
-    >>> valid = MerkleTree.verify_proof(tx2, proof, root)
-    >>> print(valid)  # True
+Builds bottom-up tree where root hash represents entire batch.
+Proofs are O(log n) with only sibling hashes needed.
 """
 
 import hashlib
@@ -32,46 +11,16 @@ from typing import List, Dict, Any, Optional
 
 
 class MerkleTree:
-    """
-    Binary Merkle Tree for batch validation
-
-    Attributes:
-        transactions (list): List of transaction dictionaries
-        tree (list): Complete tree structure (list of levels)
-        root (str): Root hash of the tree
-    """
+    """Binary Merkle Tree for batch validation with O(log n) proofs."""
 
     def __init__(self, transactions: List[Dict[str, Any]]):
-        """
-        Build Merkle tree from transactions
-
-        Args:
-            transactions: List of transaction dictionaries
-
-        Example:
-            >>> txs = [
-            ...     {"id": 1, "amount": 100},
-            ...     {"id": 2, "amount": 200},
-            ...     {"id": 3, "amount": 300},
-            ...     {"id": 4, "amount": 400}
-            ... ]
-            >>> tree = MerkleTree(txs)
-            >>> print(tree.root[:16])  # First 16 chars of root hash
-        """
+        """Build Merkle tree from list of transaction dictionaries."""
         self.transactions = transactions
         self.tree = self._build_tree()
         self.root = self.tree[0][0] if self.tree and self.tree[0] else None
 
     def _hash_transaction(self, transaction: Dict[str, Any]) -> str:
-        """
-        Hash a single transaction
-
-        Args:
-            transaction: Transaction dictionary
-
-        Returns:
-            str: SHA-256 hash (64 hex chars)
-        """
+        """Hash a single transaction with SHA-256."""
         # Convert transaction to deterministic JSON string
         tx_string = json.dumps(transaction, sort_keys=True)
 
@@ -79,39 +28,11 @@ class MerkleTree:
         return hashlib.sha256(tx_string.encode()).hexdigest()
 
     def _hash_pair(self, left: str, right: str) -> str:
-        """
-        Hash a pair of hashes (parent node)
-
-        Args:
-            left: Left child hash
-            right: Right child hash
-
-        Returns:
-            str: SHA-256 hash of concatenated children
-        """
+        """Hash a pair of child hashes to create parent node."""
         return hashlib.sha256((left + right).encode()).hexdigest()
 
     def _build_tree(self) -> List[List[str]]:
-        """
-        Build complete Merkle tree bottom-up
-
-        Returns:
-            list: Tree structure as list of levels
-                  [[root], [level1_left, level1_right], [leaves...]]
-
-        Example tree with 4 transactions:
-                      ROOT
-                     /    \\
-                  H(0,1)  H(2,3)
-                  /  \\    /  \\
-                 T0  T1  T2  T3
-
-            tree = [
-                ["ROOT_HASH"],                    # Level 0 (root)
-                ["H(0,1)", "H(2,3)"],           # Level 1
-                ["HASH_T0", "HASH_T1", "HASH_T2", "HASH_T3"]  # Level 2 (leaves)
-            ]
-        """
+        """Build complete Merkle tree bottom-up, returning list of levels."""
         if not self.transactions:
             return []
 
@@ -145,33 +66,11 @@ class MerkleTree:
         return tree_levels
 
     def get_root(self) -> Optional[str]:
-        """
-        Get root hash of Merkle tree
-
-        Returns:
-            str or None: Root hash (64 hex chars) or None if empty
-        """
+        """Get root hash of Merkle tree."""
         return self.root
 
     def get_proof(self, tx_index: int) -> List[Dict[str, Any]]:
-        """
-        Generate Merkle proof for transaction at index
-
-        Args:
-            tx_index: Index of transaction (0-based)
-
-        Returns:
-            list: Proof path from leaf to root
-                  Each element: {"hash": "...", "position": "left"/"right"}
-
-        Example:
-            >>> tree = MerkleTree([tx0, tx1, tx2, tx3])
-            >>> proof = tree.get_proof(1)  # Prove tx1
-            >>> # proof = [
-            >>> #     {"hash": "HASH_T0", "position": "left"},   # Sibling
-            >>> #     {"hash": "H(2,3)", "position": "right"}    # Uncle
-            >>> # ]
-        """
+        """Generate Merkle proof path from leaf to root for transaction at index."""
         if tx_index < 0 or tx_index >= len(self.transactions):
             raise ValueError(f"Transaction index {tx_index} out of range")
 
@@ -212,24 +111,7 @@ class MerkleTree:
         proof: List[Dict[str, Any]],
         root: str
     ) -> bool:
-        """
-        Verify Merkle proof
-
-        Args:
-            transaction: Transaction dictionary
-            proof: Proof path from get_proof()
-            root: Expected root hash
-
-        Returns:
-            bool: True if proof is valid, False otherwise
-
-        Example:
-            >>> tx = {"id": 1, "amount": 100}
-            >>> proof = tree.get_proof(0)
-            >>> root = tree.get_root()
-            >>> valid = MerkleTree.verify_proof(tx, proof, root)
-            >>> print(valid)  # True
-        """
+        """Verify Merkle proof by walking from leaf to root."""
         # Hash the transaction
         tx_string = json.dumps(transaction, sort_keys=True)
         current_hash = hashlib.sha256(tx_string.encode()).hexdigest()
@@ -254,21 +136,11 @@ class MerkleTree:
         return current_hash == root
 
     def get_tree_structure(self) -> List[List[str]]:
-        """
-        Get complete tree structure (for storage)
-
-        Returns:
-            list: Complete tree as list of levels
-        """
+        """Get complete tree structure as list of levels."""
         return self.tree
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert tree to dictionary for JSON storage
-
-        Returns:
-            dict: Tree structure and metadata
-        """
+        """Convert tree to dictionary for JSON storage."""
         return {
             "root": self.root,
             "transaction_count": len(self.transactions),
@@ -278,28 +150,15 @@ class MerkleTree:
 
     @classmethod
     def from_dict(cls, tree_dict: Dict[str, Any], transactions: List[Dict[str, Any]]) -> 'MerkleTree':
-        """
-        Reconstruct Merkle tree from dictionary
-
-        Args:
-            tree_dict: Dictionary from to_dict()
-            transactions: Original transactions
-
-        Returns:
-            MerkleTree: Reconstructed tree
-        """
+        """Reconstruct Merkle tree from dictionary."""
         tree = cls(transactions)
         tree.tree = tree_dict["tree_structure"]
         tree.root = tree_dict["root"]
         return tree
 
 
-# Example usage / testing
 if __name__ == "__main__":
-    """
-    Test Merkle Tree implementation
-    Run: python3 -m core.crypto.merkle_tree
-    """
+    """Test Merkle Tree implementation."""
     print("=== Merkle Tree Testing ===\n")
 
     # Test 1: Build tree with 8 transactions
@@ -316,7 +175,7 @@ if __name__ == "__main__":
     print(f"  Transactions: {len(transactions)}")
     print(f"  Tree height: {len(tree.tree)}")
     print(f"  Root hash: {root[:32]}...")
-    print("  ✅ Test 1 passed!\n")
+    print("  [PASS] Test 1 passed!\n")
 
     # Test 2: Generate and verify proof
     print("Test 2: Generate and Verify Proof")
@@ -333,7 +192,7 @@ if __name__ == "__main__":
     # Verify proof
     is_valid = MerkleTree.verify_proof(transactions[tx_index], proof, root)
     print(f"  Proof valid: {is_valid}")
-    print("  ✅ Test 2 passed!\n")
+    print("  [PASS] Test 2 passed!\n")
 
     # Test 3: Tamper detection
     print("Test 3: Tamper Detection")
@@ -346,7 +205,7 @@ if __name__ == "__main__":
     is_valid_tampered = MerkleTree.verify_proof(tampered_tx, proof, root)
     print(f"  Original tx valid: True")
     print(f"  Tampered tx valid: {is_valid_tampered}")
-    print("  ✅ Test 3 passed! (Tamper detected)\n")
+    print("  [PASS] Test 3 passed! (Tamper detected)\n")
 
     # Test 4: Proof size comparison
     print("Test 4: Proof Size Comparison")
@@ -360,7 +219,7 @@ if __name__ == "__main__":
     print(f"  Full batch size: {full_batch_size / 1024:.2f} KB")
     print(f"  Proof size: {proof_size} bytes")
     print(f"  Reduction: {reduction:,.0f}x smaller")
-    print("  ✅ Test 4 passed!\n")
+    print("  [PASS] Test 4 passed!\n")
 
     # Test 5: Parallel validation simulation
     print("Test 5: Parallel Validation Simulation (12 banks)")
@@ -383,7 +242,7 @@ if __name__ == "__main__":
     print(f"  Sequential time estimate: {len(large_batch)} * 10ms = {len(large_batch) * 10}ms")
     print(f"  Parallel time estimate: {txs_per_bank} * 10ms = {txs_per_bank * 10}ms")
     print(f"  Speedup: {len(large_batch) / txs_per_bank:.1f}x faster")
-    print("  ✅ Test 5 passed!\n")
+    print("  [PASS] Test 5 passed!\n")
 
     # Test 6: Serialize and deserialize
     print("Test 6: Serialization")
@@ -394,10 +253,10 @@ if __name__ == "__main__":
     print(f"  Original root: {tree.get_root()[:20]}...")
     print(f"  Reconstructed root: {reconstructed.get_root()[:20]}...")
     print(f"  Match: {tree.get_root() == reconstructed.get_root()}")
-    print("  ✅ Test 6 passed!\n")
+    print("  [PASS] Test 6 passed!\n")
 
     print("=" * 50)
-    print("✅ All Merkle Tree tests passed!")
+    print("[PASS] All Merkle Tree tests passed!")
     print("=" * 50)
     print("\nKey Benefits Demonstrated:")
     print("  • 5.9x faster validation (parallel)")

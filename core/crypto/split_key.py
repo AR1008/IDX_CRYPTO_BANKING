@@ -1,20 +1,8 @@
 """
-Split-Key Cryptography - Court-Ordered De-anonymization
-Author: Ashutosh Rajesh
-Purpose: Dual-custody decryption system with judicial oversight
+Split-Key Cryptography - Court-ordered de-anonymization with dual-custody decryption.
 
-System Design:
-1. RBI holds permanent master key half (stored forever, reusable)
-2. We (private company) create temporary key half per court order
-3. Both halves required to decrypt Session ID → IDX mapping
-4. Our key half expires after 24 hours (automatic deletion)
-5. Constitutional protection: Neither party can decrypt alone
-
-
-Privacy Guarantee:
-- RBI alone: Cannot decrypt (missing our half)
-- We alone: Cannot decrypt (missing RBI half)
-- Together with court order: Can decrypt (constitutional oversight)
+Combines RBI permanent key half with temporary company key half (24h expiry).
+Both halves required via XOR for Session ID to IDX decryption with judicial oversight.
 """
 
 import hashlib
@@ -26,43 +14,7 @@ from config.settings import settings
 import os 
 
 class CourtOrderKeyManager:
-    """
-    Manages split-key cryptography for court-ordered de-anonymization
-    
-    Key Components:
-    1. RBI Master Key Half (permanent, stored in settings)
-    2. Temporary Key Half (created per court order, 24h expiry)
-    3. Combined Master Key (both halves XOR'd together)
-    
-    Security Model:
-    - Dual custody: Requires both RBI and court approval
-    - Temporary access: Our key expires after 24 hours
-    - Audit trail: Every access logged with timestamps
-    - Cannot be bypassed: Mathematical requirement for both keys
-    
-    Example:
-        >>> # Court approves investigation
-        >>> court_order = {
-        ...     'judge_id': 'JUDGE_12345',
-        ...     'court_order_number': 'CO_2025_67890',
-        ...     'timestamp': '2025-12-21T10:30:45.123456'
-        ... }
-        >>> 
-        >>> # We create our temporary key half
-        >>> temp_key, expiry = CourtOrderKeyManager.generate_temporary_key(
-        ...     judge_id=court_order['judge_id'],
-        ...     court_order_number=court_order['court_order_number']
-        ... )
-        >>> 
-        >>> # Combine with RBI's permanent key half
-        >>> master_key = CourtOrderKeyManager.combine_key_halves(
-        ...     temporary_half=temp_key,
-        ...     rbi_permanent_half=settings.RBI_MASTER_KEY_HALF
-        ... )
-        >>> 
-        >>> # Use master key to decrypt Session → IDX
-        >>> # After 24 hours, temp_key is deleted
-    """
+    """Manages split-key cryptography for court-ordered de-anonymization with dual custody and 24h temporary keys."""
     
     # Key validity duration (24 hours)
     KEY_VALIDITY_HOURS = 24
@@ -79,52 +31,7 @@ class CourtOrderKeyManager:
         court_order_number: str,
         custom_salt: Optional[str] = None
     ) -> Tuple[str, datetime]:
-        """
-        Generate temporary key half for court order (expires in 24 hours)
-        
-        Process:
-        1. Get current timestamp (millisecond precision)
-        2. Combine: Judge_ID + Court_Order_Number + Timestamp + Secret_Salt
-        3. Hash with SHA-256
-        4. Return key half + expiry time
-        
-        Args:
-            judge_id (str): Judge's unique identifier
-                           Example: "JUDGE_12345"
-            
-            court_order_number (str): Court order reference number
-                                     Example: "CO_2025_67890"
-            
-            custom_salt (str, optional): Custom salt for testing
-                                        Production: Auto-generated secure salt
-        
-        Returns:
-            Tuple[str, datetime]: (temporary_key_half, expiry_datetime)
-                temporary_key_half: Our half of the master key
-                expiry_datetime: When this key expires (24h from now)
-        
-        Security Properties:
-        - Includes judge_id: Different judges → different keys
-        - Includes court_order_number: Different orders → different keys
-        - Includes timestamp: Same judge, same order, different time → different keys
-        - Includes secret_salt: Cannot recreate key without our secret
-        
-        Example:
-            >>> # Judge JUDGE_12345 approves court order CO_2025_67890
-            >>> temp_key, expiry = CourtOrderKeyManager.generate_temporary_key(
-            ...     judge_id="JUDGE_12345",
-            ...     court_order_number="CO_2025_67890"
-            ... )
-            >>> 
-            >>> print(f"Temporary Key: {temp_key[:40]}...")
-            Temporary Key: TEMP_KEY_7f3a9b2c1d5e8f4a6b9c3d7e...
-            >>> 
-            >>> print(f"Expires: {expiry}")
-            Expires: 2025-12-22 10:30:45.123456
-            >>> 
-            >>> # After 24 hours, this key is deleted
-            >>> # Police must get new court order to investigate again
-        """
+        """Generate temporary key half for court order. Returns (key_half, expiry_datetime) with 24h validity."""
         
         # Step 1: Get current timestamp with millisecond precision
         # This ensures each key is unique even if same judge approves
@@ -173,55 +80,7 @@ class CourtOrderKeyManager:
     
     @staticmethod
     def combine_key_halves(temporary_half: str, rbi_permanent_half: str) -> str:
-        """
-        Combine temporary and permanent key halves to create master key
-        
-        Process:
-        1. Remove prefixes (TEMP_KEY_ and any RBI prefix)
-        2. XOR the two key halves together
-        3. Return combined master key
-        
-        Mathematical Property (XOR):
-        - A XOR B = C (combining keys)
-        - C XOR B = A (with RBI key, get our key)
-        - C XOR A = B (with our key, get RBI key)
-        - Without both, cannot derive master key
-        
-        Args:
-            temporary_half (str): Our temporary key half
-                                 Format: "TEMP_KEY_abc123..."
-            
-            rbi_permanent_half (str): RBI's permanent key half
-                                     Format: "RBI_KEY_xyz789..." or raw hex
-        
-        Returns:
-            str: Master decryption key (can decrypt Session → IDX)
-        
-        Security:
-        - Neither half alone reveals master key
-        - Both halves required to decrypt
-        - If one half compromised, data still safe
-        
-        Example:
-            >>> # RBI has permanent half
-            >>> rbi_half = settings.RBI_MASTER_KEY_HALF
-            >>> 
-            >>> # We create temporary half (from court order)
-            >>> temp_half, _ = CourtOrderKeyManager.generate_temporary_key(
-            ...     judge_id="JUDGE_12345",
-            ...     court_order_number="CO_2025_67890"
-            ... )
-            >>> 
-            >>> # Combine both halves
-            >>> master_key = CourtOrderKeyManager.combine_key_halves(
-            ...     temporary_half=temp_half,
-            ...     rbi_permanent_half=rbi_half
-            ... )
-            >>> 
-            >>> # Use master_key to decrypt Session → IDX
-            >>> # from core.crypto.encryption import decrypt_session_mapping
-            >>> # idx = decrypt_session_mapping(session_id, master_key)
-        """
+        """Combine temporary and permanent key halves via XOR to create master decryption key."""
         
         # Step 1: Extract hex values (remove prefixes)
         # Temporary key format: "TEMP_KEY_abc123..."
@@ -268,33 +127,7 @@ class CourtOrderKeyManager:
     
     @staticmethod
     def is_key_expired(expiry_datetime: datetime) -> bool:
-        """
-        Check if temporary key has expired
-        
-        Args:
-            expiry_datetime (datetime): When key expires
-        
-        Returns:
-            bool: True if expired, False if still valid
-        
-        Example:
-            >>> from datetime import datetime, timedelta
-            >>> 
-            >>> # Key created now, expires in 24 hours
-            >>> _, expiry = CourtOrderKeyManager.generate_temporary_key(
-            ...     judge_id="JUDGE_12345",
-            ...     court_order_number="CO_2025_67890"
-            ... )
-            >>> 
-            >>> # Check if expired (should be False)
-            >>> CourtOrderKeyManager.is_key_expired(expiry)
-            False
-            >>> 
-            >>> # Simulate 25 hours passing
-            >>> past_expiry = datetime.now() - timedelta(hours=25)
-            >>> CourtOrderKeyManager.is_key_expired(past_expiry)
-            True
-        """
+        """Check if temporary key has expired. Returns True if expired."""
         return datetime.now() > expiry_datetime
     
     
@@ -303,40 +136,7 @@ class CourtOrderKeyManager:
         judge_id: str,
         court_order_number: str
     ) -> bool:
-        """
-        Verify court order is legitimate (auto-verification)
-        
-        In production, this would:
-        1. Query central Indian courts database
-        2. Verify court order number exists
-        3. Verify judge ID matches the order
-        4. Check order is not revoked/expired
-        
-        Args:
-            judge_id (str): Judge's identifier
-            court_order_number (str): Court order reference
-        
-        Returns:
-            bool: True if valid court order, False otherwise
-        
-        Note:
-            This is a placeholder. Production implementation would
-            integrate with actual court database API.
-        
-        Example (Production):
-            >>> # Real verification against court database
-            >>> is_valid = CourtOrderKeyManager.verify_court_order(
-            ...     judge_id="JUDGE_12345",
-            ...     court_order_number="CO_2025_67890"
-            ... )
-            >>> 
-            >>> if is_valid:
-            ...     # Generate temporary key
-            ...     temp_key, expiry = generate_temporary_key(...)
-            >>> else:
-            ...     # Reject - invalid court order
-            ...     raise ValueError("Invalid court order")
-        """
+        """Verify court order legitimacy. Returns True if valid. Production would query central court database."""
         # TODO: Implement actual court database verification
         # This would call Indian courts API to verify:
         # - Court order exists
@@ -350,10 +150,6 @@ class CourtOrderKeyManager:
         
         return is_valid_judge and is_valid_order
 
-
-# ==========================================
-# EXAMPLE USAGE & TESTING
-# ==========================================
 
 if __name__ == "__main__":
     """
@@ -381,7 +177,7 @@ if __name__ == "__main__":
     print(f"  Temporary Key: {temp_key1[:50]}...")
     print(f"  Expires: {expiry1.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Valid for: {CourtOrderKeyManager.KEY_VALIDITY_HOURS} hours")
-    print(f"  ✅ Test 1 passed!\n")
+    print(f"  [PASS] Test 1 passed!\n")
     
     # Test 2: Combine key halves
     print("Test 2: Combine Key Halves")
@@ -393,7 +189,7 @@ if __name__ == "__main__":
     print(f"  Temporary Half: {temp_key1[:40]}...")
     print(f"  RBI Half: {rbi_permanent_key[:40]}...")
     print(f"  Master Key: {master_key[:40]}...")
-    print(f"  ✅ Test 2 passed!\n")
+    print(f"  [PASS] Test 2 passed!\n")
     
     # Test 3: Different court orders → different keys
     print("Test 3: Uniqueness (Different Court Orders)")
@@ -408,7 +204,7 @@ if __name__ == "__main__":
     print(f"  Court Order 2: CO_2025_99999")
     print(f"  Key 2: {temp_key2[:40]}...")
     print(f"  Different: {temp_key1 != temp_key2}")
-    print(f"  ✅ Test 3 passed!\n")
+    print(f"  [PASS] Test 3 passed!\n")
     
     # Test 4: Key expiry
     print("Test 4: Key Expiry Check")
@@ -423,7 +219,7 @@ if __name__ == "__main__":
     print(f"  Key expiring in 24 hours: Valid = {is_valid}")
     print(f"  Key expired 1 hour ago: Invalid = {is_invalid}")
     assert is_valid and is_invalid, "Expiry check failed!"
-    print(f"  ✅ Test 4 passed!\n")
+    print(f"  [PASS] Test 4 passed!\n")
     
     # Test 5: Court order verification
     print("Test 5: Court Order Verification")
@@ -440,7 +236,7 @@ if __name__ == "__main__":
     print(f"  Valid court order verified: {valid_order}")
     print(f"  Invalid order rejected: {not invalid_order}")
     assert valid_order and not invalid_order, "Verification failed!"
-    print(f"  ✅ Test 5 passed!\n")
+    print(f"  [PASS] Test 5 passed!\n")
     
     # Test 6: RBI key is reusable
     print("Test 6: RBI Key Reusability")
@@ -454,15 +250,15 @@ if __name__ == "__main__":
     print(f"  Court Order 1 Master: {master1[:40]}...")
     print(f"  Court Order 2 Master: {master2[:40]}...")
     print(f"  RBI key successfully reused with different court orders")
-    print(f"  ✅ Test 6 passed!\n")
+    print(f"  [PASS] Test 6 passed!\n")
     
     print("=" * 50)
-    print("✅ All Split-Key tests passed!")
+    print("[PASS] All Split-Key tests passed!")
     print("")
     print("Security Summary:")
-    print("  • RBI alone: Cannot decrypt ❌")
-    print("  • We alone: Cannot decrypt ❌")
-    print("  • Both together: Can decrypt ✅")
+    print("  • RBI alone: Cannot decrypt [ERROR]")
+    print("  • We alone: Cannot decrypt [ERROR]")
+    print("  • Both together: Can decrypt [PASS]")
     print("  • Temporary key expires: 24 hours")
     print("  • Constitutional protection: Judicial oversight required")
     print("=" * 50)

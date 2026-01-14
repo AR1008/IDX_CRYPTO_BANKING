@@ -1,6 +1,5 @@
 """
 Phase 2 Complete Integration Test
-Author: Ashutosh Rajesh
 Purpose: Comprehensive testing of Bank Consensus + Fee Distribution
 
 Tests Cover:

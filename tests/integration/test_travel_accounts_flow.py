@@ -1,6 +1,5 @@
 """
 Complete Travel Accounts + Forex Test
-Author: Ashutosh Rajesh
 Purpose: Test entire travel account flow end-to-end
 
 Flow Tested:

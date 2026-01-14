@@ -1,6 +1,5 @@
 """
 IDX Crypto Banking - Database Connection Management
-Author: Ashutosh Rajesh
 Purpose: Manages PostgreSQL connections with connection pooling
 
 Key Features:

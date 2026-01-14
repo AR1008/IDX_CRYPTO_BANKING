@@ -1,0 +1,73 @@
+================================================================================
+DATABASE VALIDATION REPORT
+Generated: 2026-01-02T16:22:28.593838
+================================================================================
+
+SUMMARY
+--------------------------------------------------------------------------------
+Critical Issues: 6
+Warnings: 0
+Total Checks: 6
+
+DATABASE STATISTICS
+--------------------------------------------------------------------------------
+Users: 56
+Banks: 12
+Bank Accounts: 20
+Sessions: 43
+Active Sessions: 0
+Transactions: 273
+Recipients: 9
+
+ISSUES BY CATEGORY
+--------------------------------------------------------------------------------
+
+INVALID_AMOUNT: 2 issues
+  Critical: 2
+
+ORPHANED_TRANSACTION: 4 issues
+  Critical: 4
+
+CRITICAL ISSUES (Details)
+--------------------------------------------------------------------------------
+
+[ORPHANED_TRANSACTION]
+  Transaction has non-existent sender
+    transaction_id: 544
+    transaction_hash: f5433d5ffcc476d603408a0327631ba6e4331a3a25a43232fd654eed6531e497
+    sender_idx: INVALID_SENDER
+
+[ORPHANED_TRANSACTION]
+  Transaction has non-existent receiver
+    transaction_id: 544
+    transaction_hash: f5433d5ffcc476d603408a0327631ba6e4331a3a25a43232fd654eed6531e497
+    receiver_idx: INVALID_RECEIVER
+
+[INVALID_AMOUNT]
+  Transaction has invalid amount
+    transaction_id: 544
+    amount: -100.00
+
+[ORPHANED_TRANSACTION]
+  Transaction has non-existent sender
+    transaction_id: 595
+    transaction_hash: da9de75cf937cb45facbf29045c9da6afd9ea5700cf0aaa77385d6283ab65ffb
+    sender_idx: INVALID_SENDER
+
+[ORPHANED_TRANSACTION]
+  Transaction has non-existent receiver
+    transaction_id: 595
+    transaction_hash: da9de75cf937cb45facbf29045c9da6afd9ea5700cf0aaa77385d6283ab65ffb
+    receiver_idx: INVALID_RECEIVER
+
+[INVALID_AMOUNT]
+  Transaction has invalid amount
+    transaction_id: 595
+    amount: -100.00
+
+RECOMMENDATIONS
+--------------------------------------------------------------------------------
+⚠️  CRITICAL: Database has integrity issues that need immediate attention
+   Run with --clean flag to automatically fix common issues
+
+================================================================================

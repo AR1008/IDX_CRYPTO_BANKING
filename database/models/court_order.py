@@ -1,6 +1,5 @@
 """
 Court Order Model
-Author: Ashutosh Rajesh
 Purpose: Track court orders for de-anonymization
 
 Each court order:
@@ -25,13 +24,13 @@ Example:
         judge_id="JID_2025_001",
         target_idx="IDX_abc123...",
         reason="Money laundering investigation",
-        expires_at=datetime.utcnow() + timedelta(hours=24)
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
     )
 """
 
 from sqlalchemy import Column, String, Integer, Text, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from database.connection import Base
 
 
@@ -61,21 +60,21 @@ class CourtOrder(Base):
     status = Column(String(50), default='PENDING', nullable=False)  # PENDING, APPROVED, EXECUTED, EXPIRED
     
     # Access control
-    issued_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    issued_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     expires_at = Column(DateTime, nullable=False)  # 24 hours from issue
     executed_at = Column(DateTime, nullable=True)  # When decryption happened
-    
+
     # Keys issued
     company_key_issued = Column(Boolean, default=False, nullable=False)
     company_key_issued_at = Column(DateTime, nullable=True)
-    
+
     # Results
     access_granted = Column(Boolean, default=False, nullable=False)
     decrypted_data = Column(Text, nullable=True)  # Stored encrypted with audit key
-    
+
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships
     judge = relationship("Judge", back_populates="court_orders")
@@ -85,7 +84,12 @@ class CourtOrder(Base):
     
     def is_expired(self):
         """Check if order has expired"""
-        return datetime.utcnow() >= self.expires_at
+        now = datetime.now(timezone.utc)
+        expires_at = self.expires_at
+        # Handle timezone-naive datetime
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return now >= expires_at
     
     def to_dict(self):
         """Convert to dictionary"""

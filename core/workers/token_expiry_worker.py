@@ -1,6 +1,5 @@
 """
 Access Token Expiry Worker
-Author: Ashutosh Rajesh
 Purpose: Automatically revoke expired access tokens
 
 Runs periodically (cron job) to:

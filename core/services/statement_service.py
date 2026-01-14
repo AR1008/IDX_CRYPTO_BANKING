@@ -14,8 +14,9 @@ Security:
 import csv
 import io
 import hashlib
+import hmac
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Dict, Tuple
 
@@ -24,6 +25,7 @@ from database.models.transaction import Transaction
 from database.models.recipient import Recipient
 from database.models.bank_account import BankAccount
 from database.models.user import User
+from core.security.audit_logger import AuditLogger
 
 
 class StatementService:
@@ -152,6 +154,26 @@ class StatementService:
         if include_signature:
             signature = self._sign_statement(user_idx, start_date, end_date, csv_content)
 
+        # Audit log: Statement generated
+        try:
+            AuditLogger.log_custom_event(
+                event_type='STATEMENT_GENERATED',
+                event_data={
+                    'user_idx': user_idx,
+                    'start_date': start_date.isoformat(),
+                    'end_date': end_date.isoformat(),
+                    'transaction_count': len(transactions),
+                    'total_sent': str(total_sent),
+                    'total_received': str(total_received),
+                    'opening_balance': str(opening_balance),
+                    'closing_balance': str(running_balance),
+                    'include_signature': include_signature,
+                    'timestamp': datetime.now(timezone.utc).isoformat()
+                }
+            )
+        except Exception as audit_error:
+            print(f"⚠️ Audit logging failed: {audit_error}")
+
         return csv_content, signature
 
     def _get_balance_at_date(self, user_idx: str, date: datetime) -> Decimal:
@@ -234,8 +256,8 @@ class StatementService:
         # Recalculate signature
         calculated_signature = self._sign_statement(user_idx, start_date, end_date, content)
 
-        # Compare
-        return calculated_signature == provided_signature
+        # Use constant-time comparison to prevent timing attacks
+        return hmac.compare_digest(calculated_signature, provided_signature)
 
     def get_statement_metadata(
         self,

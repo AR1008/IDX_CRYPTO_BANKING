@@ -1,6 +1,5 @@
 """
 Mining Worker - With Event Emission
-Author: Ashutosh Rajesh
 """
 
 import time

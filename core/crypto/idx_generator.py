@@ -1,17 +1,8 @@
 """
-IDX Generator - Permanent Anonymous Identifier
-Author: Ashutosh Rajesh
-Purpose: Generate permanent IDX from PAN + RBI number
+IDX Generator - Permanent anonymous identifier from PAN + RBI number.
 
-Security Model:
-- Input: PAN card + RBI registration number
-- Process: Combine with secret pepper → SHA-256 hash
-- Output: Permanent IDX (cannot be reversed to PAN)
-
-Privacy Guarantee:
-- IDX ↔ Name mapping is PUBLIC (for tax purposes)
-- Transaction history for each IDX is PRIVATE
-- Session ID ↔ IDX mapping is PRIVATE (court order required)
+Generates deterministic SHA-256 hash with secret pepper.
+IDX cannot be reversed to obtain original PAN card.
 """
 
 import hashlib
@@ -21,19 +12,7 @@ from config.settings import settings
 
 
 class IDXGenerator:
-    """
-    Generates permanent anonymous identifier (IDX) from user credentials
-    
-    The IDX is permanent and deterministic:
-    - Same PAN + RBI number → Always produces same IDX
-    - Different PAN + RBI number → Different IDX
-    - IDX cannot be reversed to obtain PAN (one-way hash)
-    
-    Example:
-        >>> idx = IDXGenerator.generate("RAJSH1234K", "100001")
-        >>> print(idx)
-        "IDX_7f3a9b2c1d5e8f4a6b9c3d7e0f2a5b8c4d1e9f0a3b6c2d8e5f1a7b4c9d6e3f0"
-    """
+    """Generate permanent anonymous identifier (IDX) from PAN + RBI number using SHA-256."""
     
     # PAN format regex: 5 letters + 4 digits + 1 letter
     # Example: ABCDE1234F
@@ -46,48 +25,7 @@ class IDXGenerator:
     
     @staticmethod
     def generate(pan_card: str, rbi_number: str) -> str:
-        """
-        Generate permanent IDX for a user
-        
-        Process:
-        1. Validate PAN card format (ABCDE1234F)
-        2. Validate RBI number format (123456)
-        3. Normalize inputs (uppercase, strip whitespace)
-        4. Combine: "PAN:RBI:PEPPER"
-        5. Hash with SHA-256 (irreversible)
-        6. Return with "IDX_" prefix
-        
-        Args:
-            pan_card (str): User's PAN card number (10 characters)
-                          Format: 5 letters + 4 digits + 1 letter
-                          Example: "ABCDE1234F"
-            
-            rbi_number (str): RBI registration number (6 digits)
-                             Example: "123456"
-        
-        Returns:
-            str: Permanent IDX starting with "IDX_"
-                 Length: 68 characters (4 prefix + 64 hash)
-                 Example: "IDX_7f3a9b2c1d5e8f4a6b9c3d7e0f2a5b8c..."
-        
-        Raises:
-            ValueError: If PAN card format is invalid
-            ValueError: If RBI number format is invalid
-        
-        Example:
-            >>> # Valid usage
-            >>> idx = IDXGenerator.generate("RAJSH1234K", "100001")
-            >>> print(idx)
-            "IDX_7f3a9b2c1d5e8f4a6b9c3d7e0f2a5b8c4d1e9f0a3b6c2d8e5f1a7b4c9d6e3f0"
-            
-            >>> # Same inputs produce same IDX (deterministic)
-            >>> idx2 = IDXGenerator.generate("RAJSH1234K", "100001")
-            >>> assert idx == idx2
-            
-            >>> # Invalid PAN format
-            >>> idx = IDXGenerator.generate("INVALID", "100001")
-            ValueError: Invalid PAN format: INVALID
-        """
+        """Generate permanent IDX by hashing PAN + RBI number + pepper with SHA-256."""
         
         # Step 1: Normalize inputs
         # Convert to uppercase and remove any whitespace
@@ -127,33 +65,7 @@ class IDXGenerator:
     
     @staticmethod
     def _validate_pan(pan: str) -> bool:
-        """
-        Validate PAN card format
-        
-        Indian PAN card format (as per Income Tax Department):
-        - Position 1-5: Uppercase letters (A-Z)
-        - Position 6-9: Digits (0-9)
-        - Position 10: Uppercase letter (A-Z)
-        
-        Total length: 10 characters
-        Example: ABCDE1234F
-        
-        Args:
-            pan (str): PAN card string to validate
-        
-        Returns:
-            bool: True if valid format, False otherwise
-        
-        Examples:
-            >>> IDXGenerator._validate_pan("ABCDE1234F")
-            True
-            
-            >>> IDXGenerator._validate_pan("ABC1234567")  # Wrong format
-            False
-            
-            >>> IDXGenerator._validate_pan("ABCDE12345")  # Too long
-            False
-        """
+        """Validate PAN card format (5 letters + 4 digits + 1 letter)."""
         # Use regex pattern matching
         # ^[A-Z]{5} = Starts with exactly 5 uppercase letters
         # [0-9]{4} = Followed by exactly 4 digits
@@ -163,36 +75,7 @@ class IDXGenerator:
     
     @staticmethod
     def _validate_rbi_number(rbi_number: str) -> bool:
-        """
-        Validate RBI registration number format
-
-        RBI registration number format:
-        - Exactly 6 alphanumeric characters (A-Z, 0-9)
-        - Uppercase letters only
-        - No special characters or spaces
-
-        Example: 123456, ABC123, 1A2B3C
-        
-        Args:
-            rbi_number (str): RBI number string to validate
-        
-        Returns:
-            bool: True if valid format, False otherwise
-        
-        - Exactly 6 alphanumeric characters (A–Z, 0–9)
-        - Automatically normalized to uppercase
-        - No special characters or spaces
-
-        Valid examples:
-        - 123456
-        - ABC123
-        - 1A2B3C
-
-        Invalid:
-        - abc123
-        - 12345
-        - 12@#45
-        """
+        """Validate RBI registration number format (6 alphanumeric characters)."""
         # Use regex pattern matching
         # ^[0-9]{6}$ = Exactly 6 digits, nothing else
         return bool(IDXGenerator.RBI_PATTERN.match(rbi_number))
@@ -200,30 +83,7 @@ class IDXGenerator:
     
     @staticmethod
     def verify_idx(pan_card: str, rbi_number: str, idx_to_verify: str) -> bool:
-        """
-        Verify if an IDX matches the given PAN and RBI number
-        
-        Useful for:
-        - User login verification
-        - Database integrity checks
-        - Fraud detection
-        
-        Args:
-            pan_card (str): User's PAN card
-            rbi_number (str): User's RBI number
-            idx_to_verify (str): IDX to verify
-        
-        Returns:
-            bool: True if IDX matches, False otherwise
-        
-        Example:
-            >>> idx = IDXGenerator.generate("RAJSH1234K", "100001")
-            >>> IDXGenerator.verify_idx("RAJSH1234K", "100001", idx)
-            True
-            
-            >>> IDXGenerator.verify_idx("WRONG5678M", "100001", idx)
-            False
-        """
+        """Verify if IDX matches given PAN and RBI number."""
         try:
             # Generate IDX from provided credentials
             generated_idx = IDXGenerator.generate(pan_card, rbi_number)
@@ -237,15 +97,8 @@ class IDXGenerator:
             return False
 
 
-# ==========================================
-# EXAMPLE USAGE & TESTING
-# ==========================================
-
 if __name__ == "__main__":
-    """
-    Test the IDX generator
-    Run: python -m core.crypto.idx_generator
-    """
+    """Test the IDX generator."""
     print("=== IDX Generator Testing ===\n")
     
     # Test 1: Basic generation
@@ -257,7 +110,7 @@ if __name__ == "__main__":
     print(f"  RBI: {rbi1}")
     print(f"  IDX: {idx1}")
     print(f"  Length: {len(idx1)} characters")
-    print(f"  ✅ Test 1 passed!\n")
+    print(f"  [PASS] Test 1 passed!\n")
     
     # Test 2: Deterministic (same inputs → same output)
     print("Test 2: Deterministic Property")
@@ -266,7 +119,7 @@ if __name__ == "__main__":
     print(f"  First generation:  {idx1}")
     print(f"  Second generation: {idx1_again}")
     print(f"  Match: {idx1 == idx1_again}")
-    print(f"  ✅ Test 2 passed!\n")
+    print(f"  [PASS] Test 2 passed!\n")
     
     # Test 3: Different inputs → different outputs
     print("Test 3: Uniqueness Property")
@@ -277,7 +130,7 @@ if __name__ == "__main__":
     print(f"  User 1 IDX: {idx1}")
     print(f"  User 2 IDX: {idx2}")
     print(f"  Different: {idx1 != idx2}")
-    print(f"  ✅ Test 3 passed!\n")
+    print(f"  [PASS] Test 3 passed!\n")
     
     # Test 4: Verification
     print("Test 4: IDX Verification")
@@ -286,17 +139,17 @@ if __name__ == "__main__":
     print(f"  Correct credentials verify: {is_valid}")
     print(f"  Wrong credentials verify: {is_invalid}")
     assert is_valid and not is_invalid, "Verification failed!"
-    print(f"  ✅ Test 4 passed!\n")
+    print(f"  [PASS] Test 4 passed!\n")
     
     # Test 5: Invalid PAN format
     print("Test 5: Invalid Input Handling")
     try:
         invalid_idx = IDXGenerator.generate("INVALID", "100001")
-        print("  ❌ Test 5 failed - should have raised ValueError")
+        print("  [ERROR] Test 5 failed - should have raised ValueError")
     except ValueError as e:
         print(f"  Correctly rejected invalid PAN")
         print(f"  Error message: {e}")
-        print(f"  ✅ Test 5 passed!\n")
+        print(f"  [PASS] Test 5 passed!\n")
     
     # Test 6: Invalid RBI format
     # Test 6: Alphanumeric RBI format (should work)
@@ -304,18 +157,18 @@ if __name__ == "__main__":
     idx_alphanumeric = IDXGenerator.generate("RAJSH1234K", "1A2B3C")
     print(f"  RBI: 1A2B3C (alphanumeric)")
     print(f"  IDX: {idx_alphanumeric[:40]}...")
-    print(f"  ✅ Test 6 passed!\n")
+    print(f"  [PASS] Test 6 passed!\n")
 
     # Test 7: Invalid RBI format (too short)
     print("Test 7: Invalid RBI Handling")
     try:
         invalid_idx = IDXGenerator.generate("RAJSH1234K", "ABC")  # Only 3 chars
-        print("  ❌ Test 7 failed - should have raised ValueError")
+        print("  [ERROR] Test 7 failed - should have raised ValueError")
     except ValueError as e:
         print(f"  Correctly rejected invalid RBI number")
         print(f"  Error message: {e}")
-        print(f"  ✅ Test 7 passed!\n")
+        print(f"  [PASS] Test 7 passed!\n")
     
     print("=" * 50)
-    print("✅ All IDX Generator tests passed!")
+    print("[PASS] All IDX Generator tests passed!")
     print("=" * 50)

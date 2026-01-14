@@ -1,6 +1,5 @@
 """
 Foreign Bank Model
-Author: Ashutosh Rajesh
 Purpose: International partner banks for travel accounts
 
 Foreign banks:

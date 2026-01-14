@@ -1,6 +1,5 @@
 """
 Test Receiver Confirmation Flow
-Author: Ashutosh Rajesh
 Purpose: Test complete transaction flow with receiver confirmation
 """
 

@@ -22,3 +22,26 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# ======================
+# Security - Cryptographic Keys and Secrets
+# ======================
+# CRITICAL: Never commit cryptographic keys or secrets
+keys.json
+*_keys.json
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.local
+.env.*.local
+secrets/
+credentials/
+
+# ======================
+# Code Review and Reports
+# ======================
+# CodeRabbit validation reports
+*.coderabbit-review*
+validation_report*.md

@@ -1,6 +1,5 @@
 """
 Transactions API Routes - V2 with Receiver Confirmation
-Author: Ashutosh Rajesh
 Purpose: Transaction endpoints with receiver flow
 
 New Flow Endpoints:

@@ -1,39 +1,8 @@
 """
-Range Proofs (Bulletproofs-style)
-Author: Ashutosh Rajesh
-Purpose: Prove value is in range without revealing it
+Range Proof - Bulletproofs-style zero-knowledge range proofs.
 
-How it works:
-1. Prover wants to show: 0 < amount < balance
-2. Without revealing either amount or balance
-3. Banks can verify the proof without seeing values
-
-Implementation:
-- Uses Pedersen commitments (elliptic curve based)
-- Range proof proves value is in [0, 2^n - 1]
-- Based on discrete log problem (secure)
-- ~700 bytes proof size (compact)
-
-Security Properties:
-✅ Zero-knowledge: Reveals nothing about values
-✅ Soundness: Cannot prove false statement
-✅ Completeness: Valid proofs always verify
-✅ Compact: O(log n) proof size
-
-Example:
-    >>> from decimal import Decimal
-    >>> prover = RangeProof()
-    >>>
-    >>> # Prove balance >= amount
-    >>> proof = prover.create_proof(
-    ...     value=Decimal('1000.00'),  # Amount
-    ...     max_value=Decimal('10000.00'),  # Balance
-    ...     value_type='transaction_amount'
-    ... )
-    >>>
-    >>> # Verify proof (banks do this)
-    >>> is_valid = prover.verify_proof(proof)
-    >>> assert is_valid == True
+Proves value is within valid range without revealing the actual value.
+Uses hash-based commitments with bit decomposition for range validation.
 """
 
 import hashlib
@@ -45,73 +14,28 @@ import math
 
 
 class RangeProof:
-    """
-    Simplified Bulletproofs-style range proof
-
-    Proves that a value is in a valid range [0, max_value]
-    without revealing the actual value.
-
-    Uses Pedersen commitment-based approach:
-    - Commitment C = v*G + r*H (v=value, r=randomness, G,H=generators)
-    - Proof shows v is in range without revealing v or r
-    """
+    """Simplified Bulletproofs-style range proof using hash-based commitments."""
 
     # Configuration
     PROOF_VERSION = "1.0"
     BITS = 64  # Support values up to 2^64 (sufficient for INR amounts)
 
-    def __init__(self):
-        """Initialize range proof system"""
-        # For simplification, we use hash-based commitments
-        # In production, would use elliptic curve (secp256k1 or ed25519)
-        pass
+    # Note: Uses hash-based commitments for simplicity
+    # Production would use elliptic curve (secp256k1 or ed25519)
 
     def _to_cents(self, amount: Decimal) -> int:
-        """
-        Convert INR amount to paise (cents)
-
-        Args:
-            amount: Amount in INR
-
-        Returns:
-            int: Amount in paise (1 INR = 100 paise)
-        """
+        """Convert INR to paise (1 INR = 100 paise)."""
         return int(amount * 100)
 
     def _decompose_to_bits(self, value: int, num_bits: int) -> list[int]:
-        """
-        Decompose value into binary representation
-
-        Args:
-            value: Integer value
-            num_bits: Number of bits to use
-
-        Returns:
-            list: Binary representation (LSB first)
-
-        Example:
-            >>> prover = RangeProof()
-            >>> prover._decompose_to_bits(5, 8)
-            [1, 0, 1, 0, 0, 0, 0, 0]
-        """
+        """Decompose integer into binary representation (LSB first)."""
         bits = []
         for i in range(num_bits):
             bits.append((value >> i) & 1)
         return bits
 
     def _hash_commitment(self, value: int, blinding_factor: str) -> str:
-        """
-        Create cryptographic commitment to value
-
-        commitment = Hash(value || blinding_factor)
-
-        Args:
-            value: Value to commit to
-            blinding_factor: Random blinding factor
-
-        Returns:
-            str: Hex-encoded commitment
-        """
+        """Create hash-based commitment: Hash(value || blinding_factor)."""
         data = json.dumps({
             'value': value,
             'blinding': blinding_factor
@@ -126,29 +50,7 @@ class RangeProof:
         max_value: Decimal,
         value_type: str = "transaction_amount"
     ) -> Dict[str, Any]:
-        """
-        Create range proof showing 0 < value <= max_value
-
-        Args:
-            value: Value to prove (e.g., transaction amount)
-            max_value: Maximum allowed value (e.g., balance)
-            value_type: Type of value being proved
-
-        Returns:
-            dict: Range proof containing:
-                - commitment: Commitment to value
-                - proof_data: Zero-knowledge proof
-                - max_value_bits: Number of bits for range
-
-        Example:
-            >>> prover = RangeProof()
-            >>> proof = prover.create_proof(
-            ...     value=Decimal('1000.00'),
-            ...     max_value=Decimal('10000.00')
-            ... )
-            >>> 'commitment' in proof
-            True
-        """
+        """Create zero-knowledge range proof showing 0 < value <= max_value."""
         # Convert to paise (cents)
         value_cents = self._to_cents(value)
         max_value_cents = self._to_cents(max_value)
@@ -235,24 +137,7 @@ class RangeProof:
         return proof
 
     def verify_proof(self, proof: Dict[str, Any]) -> bool:
-        """
-        Verify range proof without knowing the value
-
-        Args:
-            proof: Range proof to verify
-
-        Returns:
-            bool: True if proof is valid
-
-        Example:
-            >>> prover = RangeProof()
-            >>> proof = prover.create_proof(
-            ...     value=Decimal('500.00'),
-            ...     max_value=Decimal('1000.00')
-            ... )
-            >>> prover.verify_proof(proof)
-            True
-        """
+        """Verify range proof without knowing the actual value."""
         try:
             # Extract proof components
             commitment = proof['commitment']
@@ -301,28 +186,7 @@ class RangeProof:
         proof: Dict[str, Any],
         expected_value: Decimal
     ) -> bool:
-        """
-        Verify proof by opening the commitment (private chain only)
-
-        This is used on the private blockchain where we have the
-        opening data encrypted with threshold keys.
-
-        Args:
-            proof: Range proof
-            expected_value: Expected value (for validation)
-
-        Returns:
-            bool: True if proof opens to expected value
-
-        Example:
-            >>> prover = RangeProof()
-            >>> proof = prover.create_proof(
-            ...     value=Decimal('1000.00'),
-            ...     max_value=Decimal('5000.00')
-            ... )
-            >>> prover.verify_with_opening(proof, Decimal('1000.00'))
-            True
-        """
+        """Verify proof by opening commitment (used on private chain with decryption)."""
         try:
             # Extract private data
             private_data = proof['private_data']
@@ -350,12 +214,9 @@ class RangeProof:
             return False
 
 
-# Example usage / testing
+# Testing
 if __name__ == "__main__":
-    """
-    Test Range Proof implementation
-    Run: python3 -m core.crypto.range_proof
-    """
+    """Test range proof. Run: python3 -m core.crypto.range_proof"""
     print("=== Range Proof Testing ===\n")
 
     prover = RangeProof()
@@ -375,28 +236,28 @@ if __name__ == "__main__":
     print(f"  Responses: {len(proof['responses'])}")
     assert 'commitment' in proof
     assert 'challenge' in proof
-    print("  ✅ Test 1 passed!\n")
+    print("  [PASS] Test 1 passed!\n")
 
     # Test 2: Verify valid proof
     print("Test 2: Verify Valid Proof")
     is_valid = prover.verify_proof(proof)
     print(f"  Valid: {is_valid}")
     assert is_valid == True
-    print("  ✅ Test 2 passed!\n")
+    print("  [PASS] Test 2 passed!\n")
 
     # Test 3: Verify with opening (private chain)
     print("Test 3: Verify with Opening")
     is_valid = prover.verify_with_opening(proof, Decimal('1000.00'))
     print(f"  Opens correctly: {is_valid}")
     assert is_valid == True
-    print("  ✅ Test 3 passed!\n")
+    print("  [PASS] Test 3 passed!\n")
 
     # Test 4: Detect wrong opening value
     print("Test 4: Detect Wrong Opening Value")
     is_invalid = prover.verify_with_opening(proof, Decimal('999.00'))
     print(f"  Valid (should be False): {is_invalid}")
     assert is_invalid == False
-    print("  ✅ Test 4 passed!\n")
+    print("  [PASS] Test 4 passed!\n")
 
     # Test 5: Value at boundary (max_value)
     print("Test 5: Boundary Test (value = max_value)")
@@ -407,7 +268,7 @@ if __name__ == "__main__":
     is_valid = prover.verify_proof(proof2)
     print(f"  Valid: {is_valid}")
     assert is_valid == True
-    print("  ✅ Test 5 passed!\n")
+    print("  [PASS] Test 5 passed!\n")
 
     # Test 6: Value exceeds max (should fail)
     print("Test 6: Value Exceeds Max (should fail)")
@@ -420,7 +281,7 @@ if __name__ == "__main__":
         assert False
     except ValueError as e:
         print(f"  Correctly rejected: {e}")
-        print("  ✅ Test 6 passed!\n")
+        print("  [PASS] Test 6 passed!\n")
 
     # Test 7: Small values
     print("Test 7: Small Values")
@@ -432,7 +293,7 @@ if __name__ == "__main__":
     print(f"  Value: ₹0.50 (50 paise)")
     print(f"  Valid: {is_valid}")
     assert is_valid == True
-    print("  ✅ Test 7 passed!\n")
+    print("  [PASS] Test 7 passed!\n")
 
     # Test 8: Large values
     print("Test 8: Large Values")
@@ -445,7 +306,7 @@ if __name__ == "__main__":
     print(f"  Num bits: {proof5['num_bits']}")
     print(f"  Valid: {is_valid}")
     assert is_valid == True
-    print("  ✅ Test 8 passed!\n")
+    print("  [PASS] Test 8 passed!\n")
 
     # Test 9: Proof size
     print("Test 9: Proof Size Analysis")
@@ -459,10 +320,10 @@ if __name__ == "__main__":
     public_size = len(public_json.encode('utf-8'))
     print(f"  Public proof size: {public_size} bytes")
     print(f"  Compression: {100 * (1 - public_size/proof_size):.1f}%")
-    print("  ✅ Test 9 passed!\n")
+    print("  [PASS] Test 9 passed!\n")
 
     print("=" * 50)
-    print("✅ All Range Proof tests passed!")
+    print("[PASS] All Range Proof tests passed!")
     print("=" * 50)
     print()
     print("Key Features Demonstrated:")

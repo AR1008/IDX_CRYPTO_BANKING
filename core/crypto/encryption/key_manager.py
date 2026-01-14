@@ -1,7 +1,42 @@
 """
 Key Manager
-Author: Ashutosh Rajesh
 Purpose: Secure key generation, storage, and management
+
+⚠️ CRITICAL SECURITY WARNINGS:
+
+1. PRODUCTION KEY STORAGE:
+   - NEVER store cryptographic keys in JSON files, code, or config files in production
+   - ALWAYS use Hardware Security Modules (HSM) or Key Management Services (KMS):
+     * AWS KMS (Amazon Key Management Service)
+     * Azure Key Vault
+     * Google Cloud KMS
+     * HashiCorp Vault
+     * Hardware Security Modules (HSMs) for highest security
+
+2. KEY ACCESS CONTROL:
+   - Implement strict IAM policies for key access
+   - Use service accounts with minimal permissions
+   - Enable audit logging for all key operations
+   - Rotate keys regularly according to compliance requirements
+
+3. KEY ROTATION:
+   - COMPANY_KEY: Rotate every 24 hours
+   - SESSION_KEY: Rotate monthly
+   - PRIVATE_CHAIN_KEY and RBI_MASTER_KEY: Permanent but must have backup procedures
+   - Implement automated key rotation in production
+
+4. DISASTER RECOVERY:
+   - Maintain secure offline backups of critical keys
+   - Use m-of-n key splitting for recovery scenarios
+   - Document and test key recovery procedures regularly
+
+5. COMPLIANCE:
+   - Ensure key storage meets regulatory requirements (PCI-DSS, GDPR, SOC 2)
+   - Implement key lifecycle management policies
+   - Conduct regular security audits
+
+This implementation uses JSON file storage for DEVELOPMENT/TESTING ONLY.
+Production deployments MUST integrate with proper HSM/KMS solutions.
 
 Key Types:
 1. PRIVATE_CHAIN_KEY - Encrypts private blockchain data (permanent)
@@ -12,14 +47,14 @@ Key Types:
 Example Flow:
     # Get key manager
     km = KeyManager()
-    
+
     # Get private chain encryption key
     private_key = km.get_key('PRIVATE_CHAIN_KEY')
-    
+
     # Encrypt data
     cipher = AESCipher(private_key)
     encrypted = cipher.encrypt("sensitive data")
-    
+
     # For court orders - needs BOTH keys
     rbi_key = km.get_key('RBI_MASTER_KEY')
     company_key = km.get_key('COMPANY_KEY')
@@ -29,7 +64,7 @@ Example Flow:
 import os
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict
 import json
 
@@ -64,10 +99,18 @@ class KeyManager:
     def _load_keys(self) -> Dict:
         """
         Load keys from storage
-        
-        In production: Use environment variables or secure vault (AWS KMS, HashiCorp Vault)
-        For development: Use JSON file
-        
+
+        ⚠️ SECURITY WARNING:
+        This method loads keys from environment variables or JSON files.
+        JSON file storage is ONLY for development/testing.
+
+        PRODUCTION REQUIREMENTS:
+        - Replace this method with HSM/KMS integration
+        - Use AWS KMS, Azure Key Vault, Google Cloud KMS, or HashiCorp Vault
+        - Implement proper access controls and audit logging
+        - Never commit keys.json to version control
+        - Encrypt keys at rest if using environment variables
+
         Returns:
             Dict: Stored keys
         """
@@ -78,31 +121,54 @@ class KeyManager:
             self.COMPANY_KEY: os.getenv('COMPANY_KEY'),
             self.SESSION_KEY: os.getenv('SESSION_KEY')
         }
-        
+
         # If any key exists in env, use env
         if any(env_keys.values()):
             print("🔑 Loading keys from environment variables")
+            print("⚠️  WARNING: Ensure environment variables are properly secured!")
             return {k: v for k, v in env_keys.items() if v}
-        
+
         # Otherwise, use config file (development)
         if os.path.exists(self.config_file):
             print(f"🔑 Loading keys from {self.config_file}")
+            print("⚠️  WARNING: JSON key storage is INSECURE for production!")
+            print("⚠️  Use HSM/KMS in production environments!")
             with open(self.config_file, 'r') as f:
                 return json.load(f)
-        
+
         # No keys found - generate new ones
         print("🔑 No keys found - generating new keys")
         return {}
     
     def _save_keys(self):
-        """Save keys to storage"""
-        # In production: Save to secure vault
-        # For development: Save to JSON file
-        
+        """
+        Save keys to storage
+
+        ⚠️ SECURITY WARNING:
+        This method saves keys to a JSON file - INSECURE for production!
+
+        PRODUCTION REQUIREMENTS:
+        - Replace with HSM/KMS storage (AWS KMS, Azure Key Vault, etc.)
+        - Never save keys to files in production
+        - Set proper file permissions (600) if you must use files temporarily
+        - Add keys.json to .gitignore to prevent accidental commits
+        - Use encryption at rest for any file-based storage
+        """
+        # In production: Save to secure vault (AWS KMS, Azure Key Vault, etc.)
+        # For development: Save to JSON file (INSECURE!)
+
+        # Set restrictive permissions before writing
+        if os.path.exists(self.config_file):
+            os.chmod(self.config_file, 0o600)
+
         with open(self.config_file, 'w') as f:
             json.dump(self.keys, f, indent=2)
-        
+
+        # Ensure file has restrictive permissions
+        os.chmod(self.config_file, 0o600)
+
         print(f"🔑 Keys saved to {self.config_file}")
+        print("⚠️  WARNING: File-based key storage is INSECURE for production!")
     
     def generate_key(self, key_type: str, length: int = 32) -> str:
         """
@@ -130,7 +196,7 @@ class KeyManager:
         # Store key
         self.keys[key_type] = {
             'key': key_hex,
-            'created_at': datetime.utcnow().isoformat(),
+            'created_at': datetime.now(timezone.utc).isoformat(),
             'rotated_at': None
         }
         
@@ -203,17 +269,17 @@ class KeyManager:
         
         if old_key:
             # Keep old key for decrypting old data
-            old_key_backup = f"{key_type}_OLD_{datetime.utcnow().isoformat()}"
+            old_key_backup = f"{key_type}_OLD_{datetime.now(timezone.utc).isoformat()}"
             self.keys[old_key_backup] = {
                 'key': old_key,
-                'archived_at': datetime.utcnow().isoformat()
+                'archived_at': datetime.now(timezone.utc).isoformat()
             }
-        
+
         # Generate new key
         new_key = self.generate_key(key_type)
-        
+
         # Update rotation timestamp
-        self.keys[key_type]['rotated_at'] = datetime.utcnow().isoformat()
+        self.keys[key_type]['rotated_at'] = datetime.now(timezone.utc).isoformat()
         
         self._save_keys()
         

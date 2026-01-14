@@ -1,6 +1,5 @@
 """
 ULTIMATE SYSTEM STRESS & SECURITY TEST
-Author: Ashutosh Rajesh
 Purpose: Test system to absolute maximum limits
 
 Tests Conducted:
@@ -401,7 +400,8 @@ class UltimateStressTest:
                     vulnerable = True
                     self.report.add_vulnerability('CRITICAL', 
                         f"SQL Injection vulnerability in login endpoint with payload: {payload}")
-            except:
+            except Exception:
+                # Expected failures during stress test
                 pass
         
         self.report.add_result('security_testing', 'SQL Injection Test', {
@@ -437,7 +437,8 @@ class UltimateStressTest:
                     vulnerable = True
                     self.report.add_vulnerability('CRITICAL',
                         f"Authentication bypass vulnerability with headers: {headers}")
-            except:
+            except Exception:
+                # Expected failures during stress test
                 pass
         
         self.report.add_result('security_testing', 'Authentication Bypass Test', {
@@ -484,7 +485,8 @@ class UltimateStressTest:
                         vulnerable = True
                         self.report.add_vulnerability('HIGH',
                             f"XSS vulnerability with payload: {payload}")
-            except:
+            except Exception:
+                # Expected failures during stress test
                 pass
         
         self.report.add_result('security_testing', 'XSS Test', {
@@ -530,7 +532,8 @@ class UltimateStressTest:
                 vulnerabilities_found += 1
                 self.report.add_vulnerability('CRITICAL',
                     'JWT none algorithm vulnerability')
-        except:
+        except Exception:
+            # Expected failures during stress test
             pass
         
         self.report.add_result('security_testing', 'JWT Vulnerabilities', {
@@ -722,7 +725,8 @@ class UltimateStressTest:
                 response = requests.get(f"{self.base_url}/api/travel/foreign-banks", timeout=2)
                 if response.status_code == 429:  # Too Many Requests
                     blocked += 1
-            except:
+            except Exception:
+                # Expected failures during stress test
                 pass
         
         duration = time.time() - start
@@ -887,7 +891,8 @@ class UltimateStressTest:
                         requests.get(f"{self.base_url}{endpoint}", timeout=5)
                     duration = (time.time() - start) * 1000
                     times.append(duration)
-                except:
+                except Exception:
+                    # Expected failures during stress test
                     pass
             
             if times:

@@ -1,6 +1,5 @@
 """
 Bank Validator - Proof of Stake Consensus
-Author: Ashutosh Rajesh
 Purpose: Banks validate transactions and create private blockchain
 
 Flow:
@@ -326,6 +325,14 @@ class BankValidator:
 
         failed_txs = []
 
+        # Pre-load all banks in ONE query (prevents N+1 problem)
+        all_banks = self.db.query(Bank).filter(Bank.is_active == True).all()
+        banks_dict = {bank.bank_code: bank for bank in all_banks}
+
+        # Pre-load all foreign banks in ONE query (prevents N+1 problem)
+        all_foreign_banks = self.db.query(ForeignBank).filter(ForeignBank.is_active == True).all()
+        foreign_banks_dict = {fb.bank_code: fb for fb in all_foreign_banks}
+
         for tx in transactions:
             # Get sender and receiver accounts from batch-loaded dict
             sender_account = accounts_dict.get(tx.sender_account_id)
@@ -340,30 +347,15 @@ class BankValidator:
             sender_bank_code = sender_account.bank_code
             receiver_bank_code = receiver_account.bank_code
 
-            # Try to get sender's bank (could be consortium or foreign)
-            sender_bank = self.db.query(Bank).filter(
-                Bank.bank_code == sender_bank_code,
-                Bank.is_active == True
-            ).first()
-
-            # Try to get receiver's bank (could be consortium or foreign)
-            receiver_bank = self.db.query(Bank).filter(
-                Bank.bank_code == receiver_bank_code,
-                Bank.is_active == True
-            ).first()
-
-            # If not consortium, check foreign banks
+            # Get sender's bank from pre-loaded dict (consortium or foreign)
+            sender_bank = banks_dict.get(sender_bank_code)
             if not sender_bank:
-                sender_bank = self.db.query(ForeignBank).filter(
-                    ForeignBank.bank_code == sender_bank_code,
-                    ForeignBank.is_active == True
-                ).first()
+                sender_bank = foreign_banks_dict.get(sender_bank_code)
 
+            # Get receiver's bank from pre-loaded dict (consortium or foreign)
+            receiver_bank = banks_dict.get(receiver_bank_code)
             if not receiver_bank:
-                receiver_bank = self.db.query(ForeignBank).filter(
-                    ForeignBank.bank_code == receiver_bank_code,
-                    ForeignBank.is_active == True
-                ).first()
+                receiver_bank = foreign_banks_dict.get(receiver_bank_code)
 
             if not sender_bank or not receiver_bank:
                 print(f"   ❌ TX {tx.transaction_hash[:16]}... - bank not found")
@@ -608,17 +600,25 @@ class BankValidator:
             # Get active banks for fee distribution
             banks = self.db.query(Bank).filter(Bank.is_active == True).all()
             bank_count = len(banks)
-            
+
+            # Pre-load all receiver users in ONE query (prevents N+1 problem for receivers)
+            # Note: Senders need pessimistic locking, so they're queried individually
+            receiver_idxs = {tx.receiver_idx for tx in valid_transactions}
+            receivers_list = self.db.query(User).filter(
+                User.idx.in_(receiver_idxs)
+            ).all()
+            receivers_dict = {user.idx: user for user in receivers_list}
+
             # Process valid transactions
             for tx in valid_transactions:
                 # Lock sender row (HYBRID: Pessimistic lock at critical moment)
+                # Note: Must query individually due to pessimistic locking
                 sender = self.db.query(User).filter(
                     User.idx == tx.sender_idx
                 ).with_for_update().first()
-                
-                receiver = self.db.query(User).filter(
-                    User.idx == tx.receiver_idx
-                ).first()
+
+                # Get receiver from pre-loaded dict (no additional query)
+                receiver = receivers_dict.get(tx.receiver_idx)
                 
                 # Double-check balance under lock
                 required = tx.amount + tx.fee

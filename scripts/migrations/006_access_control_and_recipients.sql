@@ -1,7 +1,6 @@
 -- Migration 006: Access Control & Recipient Enhancements
 -- Purpose: Add three-layer identity access control and recipient waiting period
 -- Date: 2025-12-27
--- Author: Ashutosh Rajesh
 
 -- ============================================================
 -- PART 1: Access Control Tables

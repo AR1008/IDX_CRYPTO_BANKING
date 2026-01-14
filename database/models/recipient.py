@@ -1,6 +1,5 @@
 """
 Recipient Model
-Author: Ashutosh Rajesh
 Purpose: User's saved recipients (like contact list)
 
 Users can add recipients by their IDX and give them nicknames:

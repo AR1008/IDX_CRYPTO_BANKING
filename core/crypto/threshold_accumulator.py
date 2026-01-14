@@ -1,49 +1,8 @@
 """
-Threshold Accumulator
-Author: Ashutosh Rajesh
-Purpose: Distributed control of account freeze/unfreeze
+Threshold Accumulator - Distributed control of account freeze/unfreeze with K-of-N voting.
 
-How it works:
-1. Combines Dynamic Accumulator + Threshold Voting
-2. Changes require K-of-N bank approvals (8 of 12)
-3. Used for freeze/unfreeze operations
-4. Prevents single bank from abusing power
-
-Operations:
-- Freeze account: Add to freeze accumulator (needs 8 of 12 banks)
-- Unfreeze account: Remove from freeze accumulator (needs 8 of 12 banks)
-- Check if frozen: O(1) membership check
-
-Implementation:
-- Built on Dynamic Accumulator
-- Group signature voting for proposals
-- Threshold: 8 of 12 banks must approve
-
-Security Properties:
-✅ Distributed control: No single point of failure
-✅ Accountability: All votes recorded
-✅ Transparency: Full audit trail
-✅ Efficiency: O(1) frozen status checks
-
-Example:
-    >>> # Initialize
-    >>> manager = ThresholdAccumulatorManager(
-    ...     num_banks=12,
-    ...     threshold=8
-    ... )
-    >>>
-    >>> # Create freeze proposal
-    >>> proposal = manager.create_proposal(
-    ...     operation="FREEZE",
-    ...     target="IDX_SUSPICIOUS_123"
-    ... )
-    >>>
-    >>> # Banks vote
-    >>> for bank_id in range(1, 9):  # 8 banks approve
-    ...     manager.vote(proposal_id, bank_id, approve=True)
-    >>>
-    >>> # Execute if threshold met
-    >>> manager.execute_proposal(proposal_id)
+Combines Dynamic Accumulator with threshold voting (8-of-12 banks) for distributed freeze operations.
+Provides O(1) frozen status checks with full audit trail and distributed control.
 """
 
 import hashlib
@@ -65,11 +24,7 @@ class ProposalStatus(Enum):
 
 
 class ThresholdAccumulatorManager:
-    """
-    Manage threshold accumulator for distributed freeze/unfreeze
-
-    Requires K-of-N banks to approve changes
-    """
+    """Manage threshold accumulator for distributed freeze/unfreeze with K-of-N bank approval."""
 
     def __init__(
         self,
@@ -368,7 +323,7 @@ if __name__ == "__main__":
     print(f"  Reason: {proposal['reason']}")
     print(f"  Status: {proposal['status']}")
     assert proposal['status'] == ProposalStatus.PENDING.value
-    print("  ✅ Test 1 passed!\n")
+    print("  [PASS] Test 1 passed!\n")
 
     # Test 2: Banks vote on proposal
     print("Test 2: Banks Vote on Proposal")
@@ -382,7 +337,7 @@ if __name__ == "__main__":
     print(f"  Status: {proposal['status']}")
     assert proposal['approvals'] == 8
     assert proposal['status'] == ProposalStatus.APPROVED.value
-    print("  ✅ Test 2 passed!\n")
+    print("  [PASS] Test 2 passed!\n")
 
     # Test 3: Execute proposal
     print("Test 3: Execute Approved Proposal")
@@ -397,7 +352,7 @@ if __name__ == "__main__":
     assert success == True
     assert manager.is_frozen("IDX_SUSPICIOUS_ABC123") == True
     assert proposal['status'] == ProposalStatus.EXECUTED.value
-    print("  ✅ Test 3 passed!\n")
+    print("  [PASS] Test 3 passed!\n")
 
     # Test 4: Unfreeze proposal
     print("Test 4: Create and Execute Unfreeze Proposal")
@@ -418,7 +373,7 @@ if __name__ == "__main__":
     print(f"  Account frozen: {manager.is_frozen('IDX_SUSPICIOUS_ABC123')}")
 
     assert manager.is_frozen("IDX_SUSPICIOUS_ABC123") == False
-    print("  ✅ Test 4 passed!\n")
+    print("  [PASS] Test 4 passed!\n")
 
     # Test 5: Rejected proposal (not enough votes)
     print("Test 5: Rejected Proposal (Insufficient Votes)")
@@ -457,7 +412,7 @@ if __name__ == "__main__":
     except ValueError as e:
         print(f"  Correctly prevented execution: {e}")
 
-    print("  ✅ Test 5 passed!\n")
+    print("  [PASS] Test 5 passed!\n")
 
     # Test 6: Cannot vote twice
     print("Test 6: Cannot Vote Twice")
@@ -477,7 +432,7 @@ if __name__ == "__main__":
     except ValueError as e:
         print(f"  Correctly prevented double voting: {e}")
 
-    print("  ✅ Test 6 passed!\n")
+    print("  [PASS] Test 6 passed!\n")
 
     # Test 7: Get frozen accounts list
     print("Test 7: Get Frozen Accounts List")
@@ -500,7 +455,7 @@ if __name__ == "__main__":
     print(f"  Count: {len(frozen)}")
 
     assert len(frozen) == 3
-    print("  ✅ Test 7 passed!\n")
+    print("  [PASS] Test 7 passed!\n")
 
     # Test 8: Audit trail
     print("Test 8: Audit Trail")
@@ -521,10 +476,10 @@ if __name__ == "__main__":
     print(f"  Rejected: {rejected_count}")
 
     assert len(all_proposals) > 0
-    print("  ✅ Test 8 passed!\n")
+    print("  [PASS] Test 8 passed!\n")
 
     print("=" * 50)
-    print("✅ All Threshold Accumulator tests passed!")
+    print("[PASS] All Threshold Accumulator tests passed!")
     print("=" * 50)
     print()
     print("Key Features Demonstrated:")

@@ -1,6 +1,5 @@
 """
 Court Order Service
-Author: Ashutosh Rajesh
 Purpose: Handle court-ordered de-anonymization
 
 3-Phase Investigation Flow:

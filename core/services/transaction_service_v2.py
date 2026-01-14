@@ -1,36 +1,12 @@
 """
-Transaction Service V2 - With Receiver Confirmation
-Author: Ashutosh Rajesh
-Purpose: Complete transaction flow with receiver bank selection
+Transaction Service V2 - Transaction processing with receiver confirmation.
 
-Flow:
-1. Sender creates transaction:
-   - Selects recipient by nickname
-   - Sends from their HDFC account
-   - Status: AWAITING_RECEIVER
-   - receiver_account_id = NULL
-
-2. Receiver gets notification:
-   - "Someone wants to send you ₹X"
-   - Receiver sees sender's nickname (if saved)
-
-3. Receiver confirms and selects bank:
-   - "Receive in ICICI account"
-   - receiver_account_id = ICICI account ID
-   - Status: PENDING (ready for mining)
-
-4. Mining worker processes:
-   - Mines with both session IDs
-   - Status: MINING → PUBLIC_CONFIRMED
-
-5. Bank consensus:
-   - Both banks (sender's HDFC + receiver's ICICI) participate
-   - Other banks validate
-   - Status: COMPLETED
+Handles complete transaction lifecycle including receiver bank selection,
+anomaly detection, and status tracking through consensus.
 """
 
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from typing import Optional, Dict
 import hashlib
@@ -43,31 +19,14 @@ from core.events.event_manager import EventManager
 
 
 class TransactionServiceV2:
-    """Enhanced transaction service with receiver confirmation"""
-    
+    """Transaction service with receiver confirmation and anomaly detection."""
+
     def __init__(self, db: Session):
-        """
-        Initialize service
-        
-        Args:
-            db: Database session
-        """
+        """Initialize transaction service."""
         self.db = db
     
     def calculate_fees(self, amount: Decimal) -> Dict[str, Decimal]:
-        """
-        Calculate transaction fees
-        
-        Total: 1.5%
-        - Miner: 0.5%
-        - Banks: 1.0% (split among 6 = 0.167% each)
-        
-        Args:
-            amount: Transaction amount
-            
-        Returns:
-            Dict with fee breakdown
-        """
+        """Calculate transaction fees: 1.5% total (0.5% miner + 1.0% banks)."""
         total_fee = amount * Decimal('0.015')  # 1.5%
         miner_fee = amount * Decimal('0.005')  # 0.5%
         bank_fee = amount * Decimal('0.01')    # 1.0%
@@ -85,17 +44,7 @@ class TransactionServiceV2:
         receiver_idx: str,
         amount: Decimal
     ) -> str:
-        """
-        Generate unique transaction hash
-        
-        Args:
-            sender_idx: Sender's IDX
-            receiver_idx: Receiver's IDX
-            amount: Amount
-            
-        Returns:
-            str: Transaction hash (SHA-256)
-        """
+        """Generate unique SHA-256 transaction hash."""
         timestamp = str(datetime.utcnow().timestamp())
         data = f"{sender_idx}:{receiver_idx}:{amount}:{timestamp}"
         return hashlib.sha256(data.encode()).hexdigest()
@@ -107,21 +56,7 @@ class TransactionServiceV2:
         amount: Decimal,
         sender_session_id: str
     ) -> Transaction:
-        """
-        Create transaction (Step 1: Sender initiates)
-        
-        Args:
-            sender_account_id: Sender's bank account ID
-            recipient_nickname: Recipient's nickname ("Mom", "Friend", etc.)
-            amount: Amount to send
-            sender_session_id: Sender's session ID
-            
-        Returns:
-            Transaction: Created transaction (AWAITING_RECEIVER)
-            
-        Raises:
-            ValueError: If validation fails
-        """
+        """Create transaction with sender initiation and anomaly detection."""
         # Get sender account
         sender_account = self.db.query(BankAccount).filter(
             BankAccount.id == sender_account_id
@@ -150,8 +85,8 @@ class TransactionServiceV2:
         # Check balance
         if sender_account.balance < total_required:
             raise ValueError(
-                f"Insufficient balance. Required: ₹{total_required}, "
-                f"Available: ₹{sender_account.balance}"
+                f"Insufficient balance. Required: INR{total_required}, "
+                f"Available: INR{sender_account.balance}"
             )
         
         # Generate transaction hash
@@ -176,16 +111,86 @@ class TransactionServiceV2:
             bank_fee=fees['bank_fee'],
             status=TransactionStatus.AWAITING_RECEIVER  # Wait for receiver
         )
-        
+
+        # Anomaly detection (non-blocking, PMLA compliance)
+        # Evaluate transaction for suspicious patterns
+        from core.services.anomaly_detection_engine import AnomalyDetectionEngine
+        from core.crypto.anomaly_zkp import AnomalyZKPService
+        from core.crypto.anomaly_threshold_encryption import AnomalyThresholdEncryption
+        import json
+
+        try:
+            anomaly_engine = AnomalyDetectionEngine(self.db)
+            anomaly_result = anomaly_engine.evaluate_transaction(transaction)
+
+            # Store anomaly data (won't block transaction)
+            transaction.anomaly_score = Decimal(str(anomaly_result['score']))
+            transaction.anomaly_flags = anomaly_result['flags']
+            transaction.requires_investigation = anomaly_result['requires_investigation']
+
+            # Generate ZKP proof for anomaly flag (Phase 2)
+            # This proves transaction is flagged without revealing details
+            zkp_service = AnomalyZKPService()
+            zkp_proof = zkp_service.generate_anomaly_proof(
+                transaction_hash=tx_hash,
+                anomaly_score=anomaly_result['score'],
+                anomaly_flags=anomaly_result['flags'],
+                requires_investigation=anomaly_result['requires_investigation']
+            )
+
+            # Store ZKP proof as JSON (public proof only, witness encrypted separately)
+            public_proof = {k: v for k, v in zkp_proof.items() if k != 'witness'}
+            transaction.zkp_anomaly_proof = json.dumps(public_proof)
+
+            # If flagged (score >= 65), encrypt transaction details (Phase 3)
+            if anomaly_result['requires_investigation']:
+                transaction.flagged_at = datetime.now(timezone.utc)
+                transaction.investigation_status = 'PENDING'
+
+                # Threshold encrypt transaction details for court order decryption
+                # Requires: Company + Supreme Court + 1-of-4 (RBI/FIU/CBI/IT)
+                threshold_enc = AnomalyThresholdEncryption()
+                encrypted_package = threshold_enc.encrypt_transaction_details(
+                    transaction_hash=tx_hash,
+                    sender_idx=sender_account.user_idx,
+                    receiver_idx=recipient.recipient_idx,
+                    amount=amount,
+                    anomaly_score=anomaly_result['score'],
+                    anomaly_flags=anomaly_result['flags']
+                )
+
+                # Store encrypted details (binary data)
+                # Key shares distributed separately to authorities
+                encrypted_json = json.dumps({
+                    'encrypted_details': encrypted_package['encrypted_details'],
+                    'transaction_hash': encrypted_package['transaction_hash'],
+                    'encrypted_at': encrypted_package['encrypted_at'],
+                    'threshold': encrypted_package['threshold']
+                })
+                transaction.threshold_encrypted_details = encrypted_json.encode('utf-8')
+
+                print(f"[WARNING]  Transaction flagged for investigation")
+                print(f"   Score: {anomaly_result['score']}")
+                print(f"   Flags: {anomaly_result['flags']}")
+                print(f"   ZKP proof generated (flag hidden)")
+                print(f"   Details encrypted (threshold: Company+Court+1-of-4)")
+                print(f"   User unaware - transaction continues normally")
+
+        except Exception as e:
+            # If anomaly detection fails, log error but don't block transaction
+            print(f"[WARNING]  Anomaly detection error: {str(e)}")
+            print(f"   Transaction proceeding normally (safety mechanism)")
+
+        # Transaction continues normally regardless of anomaly flag
         self.db.add(transaction)
         self.db.commit()
         self.db.refresh(transaction)
         
-        print(f"📤 Transaction created: {tx_hash[:16]}...")
+        print(f"Transaction created: {tx_hash[:16]}...")
         print(f"   From: {sender_account.bank_code} account")
         print(f"   To: {recipient_nickname} ({recipient.recipient_idx[:16]}...)")
-        print(f"   Amount: ₹{amount}")
-        print(f"   Fee: ₹{fees['total_fee']}")
+        print(f"   Amount: {amount}")
+        print(f"   Fee: {fees['total_fee']}")
         print(f"   Status: AWAITING_RECEIVER")
         
         # Emit event (receiver notification)
@@ -200,15 +205,7 @@ class TransactionServiceV2:
         return transaction
     
     def get_pending_transactions_for_receiver(self, user_idx: str):
-        """
-        Get transactions awaiting receiver's confirmation
-        
-        Args:
-            user_idx: Receiver's IDX
-            
-        Returns:
-            List[Transaction]: Pending transactions
-        """
+        """Get transactions awaiting receiver confirmation."""
         return self.db.query(Transaction).filter(
             Transaction.receiver_idx == user_idx,
             Transaction.status == TransactionStatus.AWAITING_RECEIVER
@@ -219,19 +216,7 @@ class TransactionServiceV2:
         transaction_hash: str,
         receiver_account_id: int
     ) -> Transaction:
-        """
-        Confirm transaction and select receiving bank (Step 2: Receiver accepts)
-        
-        Args:
-            transaction_hash: Transaction hash
-            receiver_account_id: Receiver's bank account ID (their choice)
-            
-        Returns:
-            Transaction: Updated transaction (PENDING)
-            
-        Raises:
-            ValueError: If validation fails
-        """
+        """Confirm transaction and select receiving bank account."""
         # Get transaction
         transaction = self.db.query(Transaction).filter(
             Transaction.transaction_hash == transaction_hash
@@ -265,7 +250,7 @@ class TransactionServiceV2:
         self.db.commit()
         self.db.refresh(transaction)
         
-        print(f"✅ Transaction confirmed: {transaction_hash[:16]}...")
+        print(f"Transaction confirmed: {transaction_hash[:16]}...")
         print(f"   Receiver selected: {receiver_account.bank_code} account")
         print(f"   Status: PENDING (ready for mining)")
         
@@ -279,15 +264,7 @@ class TransactionServiceV2:
         return transaction
     
     def reject_transaction(self, transaction_hash: str) -> Transaction:
-        """
-        Reject transaction (Step 2: Receiver declines)
-        
-        Args:
-            transaction_hash: Transaction hash
-            
-        Returns:
-            Transaction: Updated transaction (REJECTED)
-        """
+        """Reject pending transaction."""
         transaction = self.db.query(Transaction).filter(
             Transaction.transaction_hash == transaction_hash
         ).first()
@@ -303,7 +280,7 @@ class TransactionServiceV2:
         self.db.commit()
         self.db.refresh(transaction)
         
-        print(f"❌ Transaction rejected: {transaction_hash[:16]}...")
+        print(f"Transaction rejected: {transaction_hash[:16]}...")
         
         # Emit event
         EventManager.emit('transaction_rejected', {
@@ -314,9 +291,8 @@ class TransactionServiceV2:
         return transaction
 
 
-# Testing
 if __name__ == "__main__":
-    """Test transaction service v2"""
+    """Test transaction service v2."""
     from database.connection import SessionLocal
     from core.crypto.idx_generator import IDXGenerator
     from core.services.recipient_service import RecipientService
@@ -339,7 +315,7 @@ if __name__ == "__main__":
         ).first()
         
         if not sender_account:
-            print("❌ Sender account not found. Run migration first.")
+            print("[ERROR] Sender account not found. Run migration first.")
             exit(1)
         
         # Check if recipient exists in contact list
@@ -348,7 +324,7 @@ if __name__ == "__main__":
             print("  Adding recipient to contact list...")
             recipient = recipient_service.add_recipient(sender_idx, receiver_idx, "TestFriend")
         
-        print(f"Sender account: {sender_account.bank_code} - ₹{sender_account.balance}")
+        print(f"Sender account: {sender_account.bank_code} - INR{sender_account.balance}")
         print(f"Recipient: {recipient.nickname}\n")
         
         # Test 1: Create transaction
@@ -361,16 +337,16 @@ if __name__ == "__main__":
         )
         print(f"  Status: {tx.status.value}")
         print(f"  Receiver account ID: {tx.receiver_account_id}")
-        print("  ✅ Test 1 passed!\n")
+        print("  [PASS] Test 1 passed!\n")
         
         # Test 2: Get pending for receiver
         print("Test 2: Get Pending Transactions for Receiver")
         pending = service.get_pending_transactions_for_receiver(receiver_idx)
         print(f"  Found {len(pending)} pending transactions")
-        print("  ✅ Test 2 passed!\n")
+        print("  [PASS] Test 2 passed!\n")
         
         print("=" * 50)
-        print("✅ All tests passed!")
+        print("[PASS] All tests passed!")
         print("=" * 50)
         
     finally:

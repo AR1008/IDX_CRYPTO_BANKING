@@ -1,6 +1,5 @@
 -- Migration 003: Audit Trail Persistence
 -- Purpose: Create tamper-proof audit log for court orders and sensitive operations
--- Author: Ashutosh Rajesh
 -- Date: 2025-12-26
 
 -- Table: audit_logs

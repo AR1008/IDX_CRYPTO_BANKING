@@ -1,6 +1,5 @@
 """
 IDX Registry API Routes
-Author: Ashutosh Rajesh
 Purpose: Company-controlled access to IDX → Real Name mapping
 
 SECURITY MODEL:

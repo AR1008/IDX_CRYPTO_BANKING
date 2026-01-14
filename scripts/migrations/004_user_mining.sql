@@ -1,6 +1,5 @@
 -- Migration 004: User Mining System
 -- Purpose: Enable multiple users to mine competitively
--- Author: Ashutosh Rajesh
 -- Date: 2025-12-26
 
 -- Table: miner_statistics

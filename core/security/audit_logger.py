@@ -34,11 +34,15 @@ Usage:
 
 import hashlib
 import json
+import logging
 import threading
 from typing import Optional, Dict, Any, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 from database.connection import SessionLocal
 from database.models.audit_log import AuditLog
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 class AuditLogger:
@@ -114,7 +118,7 @@ class AuditLogger:
                 previous_hash = previous_log.current_log_hash if previous_log else "GENESIS"
 
                 # Current timestamp
-                timestamp = datetime.utcnow()
+                timestamp = datetime.now(timezone.utc)
 
                 # Calculate current hash
                 current_hash = AuditLogger._calculate_hash(
@@ -142,13 +146,13 @@ class AuditLogger:
                 db.commit()
                 db.refresh(log)
 
-                print(f"✅ Audit log created: {event_type} (ID: {log.id}, Hash: {current_hash[:16]}...)")
+                logger.debug(f"Audit log created: {event_type} (ID: {log.id}, Hash: {current_hash[:16]}...)")
 
                 return log
 
         except Exception as e:
             db.rollback()
-            print(f"❌ Error creating audit log: {e}")
+            logger.error(f"Error creating audit log: {e}")
             raise
 
         finally:
@@ -219,7 +223,7 @@ class AuditLogger:
             'user_idx': user_idx,
             'key_type': key_type,
             'bank_code': bank_code,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
         return AuditLogger._create_log(
@@ -252,7 +256,7 @@ class AuditLogger:
         event_data = {
             'user_idx': user_idx,
             'pan_card_masked': masked_pan,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
         return AuditLogger._create_log(
@@ -291,7 +295,7 @@ class AuditLogger:
             'receiver_idx': receiver_idx,
             'amount': str(amount),
             'transaction_type': transaction_type,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
         return AuditLogger._create_log(
@@ -327,7 +331,7 @@ class AuditLogger:
             'block_hash': block_hash,
             'miner_idx': miner_idx,
             'transaction_count': transaction_count,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
         return AuditLogger._create_log(

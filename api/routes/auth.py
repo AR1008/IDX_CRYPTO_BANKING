@@ -1,6 +1,5 @@
 """
 Authentication Routes
-Author: Ashutosh Rajesh
 Purpose: Login and registration endpoints
 
 Endpoints:

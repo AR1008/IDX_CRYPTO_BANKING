@@ -1,6 +1,5 @@
 """
 Per-Transaction Encryption Service
-Author: Ashutosh Rajesh
 Purpose: Encrypt each transaction with unique key for selective court order decryption
 
 Encryption Architecture (Option A):

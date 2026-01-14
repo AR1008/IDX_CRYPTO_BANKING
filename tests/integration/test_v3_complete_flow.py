@@ -1,6 +1,5 @@
 """
 Complete Integration Test Suite
-Author: Ashutosh Rajesh
 Purpose: End-to-end testing with all cryptographic features and 12 banks
 
 Tests:

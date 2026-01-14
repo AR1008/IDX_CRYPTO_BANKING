@@ -1,6 +1,5 @@
 """
 Bank Account Model
-Author: Ashutosh Rajesh
 Purpose: User's bank accounts at different banks
 
 A user can have multiple bank accounts:

@@ -1,15 +1,7 @@
 """
-Bank Account Service
-Author: Ashutosh Rajesh
-Purpose: Manage user's multiple bank accounts
+Bank Account Service - Manage user's multiple bank accounts.
 
-Features:
-- Create new bank account at any bank
-- View all accounts for a user
-- Get account by bank code
-- Transfer between own accounts
-- Check balance across all accounts
-- Freeze/unfreeze accounts (for court orders)
+Create accounts, view balances, transfer between own accounts, freeze/unfreeze for court orders.
 """
 
 from decimal import Decimal
@@ -24,15 +16,10 @@ from database.models.bank import Bank
 
 
 class BankAccountService:
-    """Service for managing bank accounts"""
-    
+    """Service for managing bank accounts."""
+
     def __init__(self, db: Session):
-        """
-        Initialize service
-        
-        Args:
-            db: Database session
-        """
+        """Initialize service with database session."""
         self.db = db
     
     def generate_account_number(self, bank_code: str, user_idx: str) -> str:
@@ -336,14 +323,14 @@ if __name__ == "__main__":
         print(f"  Found {len(accounts)} accounts")
         for acc in accounts:
             print(f"  - {acc.bank_code}: ₹{acc.balance} ({acc.account_number})")
-        print("  ✅ Test 1 passed!\n")
+        print("  [PASS] Test 1 passed!\n")
         
         # Test 2: Get account summary
         print("Test 2: Account Summary")
         summary = service.get_account_summary(test_idx)
         print(f"  Total Balance: ₹{summary['total_balance']}")
         print(f"  Accounts: {summary['account_count']}")
-        print("  ✅ Test 2 passed!\n")
+        print("  [PASS] Test 2 passed!\n")
         
         # Test 3: Create new account
         print("Test 3: Create ICICI Account")
@@ -351,7 +338,7 @@ if __name__ == "__main__":
             icici_account = service.create_account(test_idx, "ICICI", Decimal('20000'))
             print(f"  Account created: {icici_account.account_number}")
             print(f"  Balance: ₹{icici_account.balance}")
-            print("  ✅ Test 3 passed!\n")
+            print("  [PASS] Test 3 passed!\n")
         except ValueError as e:
             print(f"  ⏭️  Account already exists: {str(e)}\n")
         
@@ -359,10 +346,10 @@ if __name__ == "__main__":
         print("Test 4: Total Balance")
         total = service.get_total_balance(test_idx)
         print(f"  Total: ₹{total}")
-        print("  ✅ Test 4 passed!\n")
+        print("  [PASS] Test 4 passed!\n")
         
         print("=" * 50)
-        print("✅ All tests passed!")
+        print("[PASS] All tests passed!")
         print("=" * 50)
         
     finally:

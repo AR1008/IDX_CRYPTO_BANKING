@@ -1,6 +1,5 @@
 """
 Bank Accounts API Routes
-Author: Ashutosh Rajesh
 Purpose: Manage user's multiple bank accounts
 
 Endpoints:

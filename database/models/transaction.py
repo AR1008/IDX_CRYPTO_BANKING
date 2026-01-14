@@ -1,23 +1,12 @@
 """
-Transaction Model - All Money Transfers
+Transaction Model - Complete transaction history with cryptographic privacy.
 
-Purpose: Store complete transaction history
-
-Table Structure:
-- Sender/Receiver: IDX (not names!)
-- Session IDs: For blockchain privacy
-- Amount & Fee: Transaction details
-- Status: PENDING → MINING → COMPLETED
-- Block references: Public & Private chain
-- Timestamps: Created, updated
-
-Privacy Model:
-✅ Stored: Sender IDX, Receiver IDX
-❌ NOT stored: Real names (look up via IDX → Name mapping)
-🔐 Session IDs: Link to blockchain (encrypted in private chain)
+Stores sender/receiver IDX, session IDs, amounts, fees, status progression,
+blockchain references, and cryptographic commitments for privacy.
 """
 
-from sqlalchemy import Column, ForeignKey, Integer, String, Numeric, DateTime, Enum, Index, Text
+from sqlalchemy import Column, ForeignKey, Integer, String, Numeric, DateTime, Enum, Index, Text, Boolean, LargeBinary
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.sql import func
 from datetime import datetime
 from decimal import Decimal
@@ -26,14 +15,7 @@ from database.connection import Base
 from sqlalchemy.orm import relationship
 
 class TransactionStatus(enum.Enum):
-    """
-    Transaction lifecycle states
-    
-    Flow:
-    PENDING → AWAITING_RECEIVER → MINING → PUBLIC_CONFIRMED → COMPLETED
-                                      ↓
-                                    FAILED (if error)
-    """
+    """Transaction lifecycle states: PENDING -> AWAITING_RECEIVER -> MINING -> COMPLETED."""
     PENDING = "pending"                          # Transaction created by sender
     AWAITING_RECEIVER = "awaiting_receiver"      # Waiting for receiver to select bank account
     MINING = "mining"                            # Being mined on public chain
@@ -45,35 +27,7 @@ class TransactionStatus(enum.Enum):
 
 
 class Transaction(Base):
-    """
-    Transaction records table
-    
-    Each transaction tracks:
-    - Who sent (sender_idx)
-    - Who received (receiver_idx)
-    - How much (amount)
-    - Fees paid (miner_fee + bank_fee)
-    - Current status (pending → completed)
-    - Blockchain blocks (public + private)
-    - Session IDs (for privacy)
-    
-    Example:
-        >>> from database.connection import SessionLocal
-        >>> from decimal import Decimal
-        >>> 
-        >>> db = SessionLocal()
-        >>> tx = Transaction(
-        ...     sender_idx="IDX_9ada28aeb...",
-        ...     receiver_idx="IDX_1f498a455...",
-        ...     sender_session_id="SESSION_ABC123",
-        ...     receiver_session_id="SESSION_XYZ789",
-        ...     amount=Decimal('1000.00'),
-        ...     fee=Decimal('15.00'),
-        ...     status=TransactionStatus.PENDING
-        ... )
-        >>> db.add(tx)
-        >>> db.commit()
-    """
+    """Transaction records with cryptographic commitments and anomaly detection."""
     
     __tablename__ = 'transactions'
     
@@ -207,6 +161,69 @@ class Transaction(Base):
         comment="Random salt for commitment opening (private chain only)"
     )
 
+    # ===== ANOMALY DETECTION FIELDS =====
+
+    # Anomaly score (0-100, higher = more suspicious)
+    anomaly_score = Column(
+        Numeric(precision=5, scale=2),
+        nullable=False,
+        default=Decimal('0.00'),
+        index=True,
+        comment="Anomaly detection score (0-100)"
+    )
+
+    # Anomaly flags (JSON array of flags: ["HIGH_VALUE_PMLA", "STRUCTURING_DETECTED"])
+    anomaly_flags = Column(
+        JSON,
+        nullable=True,
+        comment="List of anomaly flags detected"
+    )
+
+    # Requires investigation flag (if score >= threshold)
+    requires_investigation = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        index=True,
+        comment="Flagged for investigation (score >= 65)"
+    )
+
+    # ZKP anomaly proof (zero-knowledge proof of anomaly flag)
+    zkp_anomaly_proof = Column(
+        Text,
+        nullable=True,
+        comment="Zero-knowledge proof of anomaly detection (flag hidden)"
+    )
+
+    # Threshold encrypted details (encrypted transaction details for court orders)
+    threshold_encrypted_details = Column(
+        LargeBinary,
+        nullable=True,
+        comment="Threshold-encrypted transaction details (3-party: Company+Court+RBI)"
+    )
+
+    # Investigation status
+    investigation_status = Column(
+        String(20),
+        nullable=True,
+        default=None,
+        index=True,
+        comment="Investigation status: None, PENDING, UNDER_REVIEW, CLEARED, AUTO_CLEARED, CONFIRMED_SUSPICIOUS"
+    )
+
+    # Timestamps for anomaly tracking
+    flagged_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="When transaction was flagged"
+    )
+
+    cleared_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="When investigation cleared the transaction"
+    )
+
     # Transaction status
     status = Column(
         Enum(TransactionStatus),
@@ -252,6 +269,8 @@ class Transaction(Base):
     )
     
     # Indexes for fast queries
+    # Note: anomaly_score, requires_investigation, and investigation_status already have
+    # index=True in column definitions, so no need for duplicate explicit indexes
     __table_args__ = (
         Index('idx_tx_sender', 'sender_idx'),           # All transactions by sender
         Index('idx_tx_receiver', 'receiver_idx'),       # All transactions by receiver
@@ -265,39 +284,21 @@ class Transaction(Base):
         Index('idx_tx_batch', 'batch_id'),              # Batch queries
         Index('idx_tx_commitment', 'commitment'),       # Commitment lookups
         Index('idx_tx_nullifier', 'nullifier'),         # Nullifier checks (double-spend)
+        # Indexes for anomaly detection (flagged_at doesn't have index=True in column)
+        Index('idx_tx_flagged_at', 'flagged_at'),       # When flagged
     )
     
     def __repr__(self):
-        """String representation"""
+        """String representation."""
         return (
             f"<Transaction(id={self.id}, "
             f"hash={self.transaction_hash[:16]}..., "
-            f"amount=₹{self.amount}, "
+            f"amount=INR{self.amount}, "
             f"status={self.status.value})>"
         )
     
     def to_dict(self, include_sessions=False):
-        """
-        Convert to dictionary for API responses
-        
-        Args:
-            include_sessions (bool): Include session IDs? (Only for court orders)
-        
-        Returns:
-            dict: Transaction data
-        
-        Example:
-            >>> tx.to_dict()
-            {
-                'id': 1,
-                'transaction_hash': 'abc123...',
-                'sender_idx': 'IDX_9ada28aeb...',
-                'receiver_idx': 'IDX_1f498a455...',
-                'amount': '1000.00',
-                'fee': '15.00',
-                'status': 'completed'
-            }
-        """
+        """Convert to dictionary for API responses (optionally include session IDs)."""
         data = {
             'id': self.id,
             'transaction_hash': self.transaction_hash,
@@ -328,12 +329,8 @@ class Transaction(Base):
     # receiver_account = relationship("BankAccount", foreign_keys=[receiver_account_id], back_populates="transactions_received")
 
 
-# Example usage / testing
 if __name__ == "__main__":
-    """
-    Test the Transaction model
-    Run: python3 -m database.models.transaction
-    """
+    """Test the Transaction model."""
     from database.connection import engine, SessionLocal
     from database.models.user import User
     from core.crypto.idx_generator import IDXGenerator
@@ -344,7 +341,7 @@ if __name__ == "__main__":
     # Create table
     print("Creating transactions table...")
     Base.metadata.create_all(bind=engine)
-    print("✅ Table created!\n")
+    print("[PASS] Table created!\n")
     
     # Create session
     db = SessionLocal()
@@ -380,7 +377,7 @@ if __name__ == "__main__":
         db.commit()
         print(f"  Sender: {user1.full_name} ({user1.idx[:20]}...)")
         print(f"  Receiver: {user2.full_name} ({user2.idx[:20]}...)")
-        print("  ✅ Test 0 passed!\n")
+        print("  [PASS] Test 0 passed!\n")
         
         # Test 1: Create transaction
         print("Test 1: Create Transaction")
@@ -412,9 +409,9 @@ if __name__ == "__main__":
         
         print(f"  Transaction: {tx}")
         print(f"  Hash: {tx.transaction_hash[:32]}...")
-        print(f"  Amount: ₹{tx.amount}")
-        print(f"  Fee: ₹{tx.fee}")
-        print("  ✅ Test 1 passed!\n")
+        print(f"  Amount: INR{tx.amount}")
+        print(f"  Fee: INR{tx.fee}")
+        print("  [PASS] Test 1 passed!\n")
         
         # Test 2: Update status
         print("Test 2: Update Transaction Status")
@@ -434,7 +431,7 @@ if __name__ == "__main__":
         db.commit()
         print(f"  Private block: #{tx.private_block_index}")
         print(f"  Status: {tx.status.value}")
-        print("  ✅ Test 2 passed!\n")
+        print("  [PASS] Test 2 passed!\n")
         
         # Test 3: Query by sender
         print("Test 3: Query Transactions by Sender")
@@ -442,7 +439,7 @@ if __name__ == "__main__":
             Transaction.sender_idx == user1.idx
         ).all()
         print(f"  Found {len(sender_txs)} transactions from {user1.full_name}")
-        print("  ✅ Test 3 passed!\n")
+        print("  [PASS] Test 3 passed!\n")
         
         # Test 4: Query by status
         print("Test 4: Query by Status")
@@ -450,7 +447,7 @@ if __name__ == "__main__":
             Transaction.status == TransactionStatus.COMPLETED
         ).all()
         print(f"  Found {len(completed_txs)} completed transactions")
-        print("  ✅ Test 4 passed!\n")
+        print("  [PASS] Test 4 passed!\n")
         
         # Test 5: Public dictionary (no sessions)
         print("Test 5: Public Dictionary")
@@ -458,7 +455,7 @@ if __name__ == "__main__":
         print(f"  Public data keys: {list(public_data.keys())}")
         assert 'sender_session_id' not in public_data
         assert 'receiver_session_id' not in public_data
-        print("  ✅ Test 5 passed! (Sessions hidden)\n")
+        print("  [PASS] Test 5 passed! (Sessions hidden)\n")
         
         # Test 6: Court order dictionary (with sessions)
         print("Test 6: Court Order Dictionary")
@@ -466,10 +463,10 @@ if __name__ == "__main__":
         print(f"  Sender session: {court_data['sender_session_id']}")
         print(f"  Receiver session: {court_data['receiver_session_id']}")
         assert 'sender_session_id' in court_data
-        print("  ✅ Test 6 passed! (Sessions shown)\n")
+        print("  [PASS] Test 6 passed! (Sessions shown)\n")
         
         print("=" * 50)
-        print("✅ All Transaction model tests passed!")
+        print("[PASS] All Transaction model tests passed!")
         print("=" * 50)
         
     finally:

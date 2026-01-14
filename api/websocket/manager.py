@@ -1,6 +1,5 @@
 """
 WebSocket Manager - Simplified
-Author: Ashutosh Rajesh
 Purpose: Real-time notifications
 """
 

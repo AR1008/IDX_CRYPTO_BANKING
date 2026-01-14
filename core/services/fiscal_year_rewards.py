@@ -1,6 +1,5 @@
 """
 Fiscal Year Reward Distribution Service
-Author: Ashutosh Rajesh
 Purpose: Distribute treasury (slashed funds) to honest banks at fiscal year end
 
 Distribution Logic:

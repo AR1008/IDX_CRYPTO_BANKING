@@ -1,6 +1,5 @@
 """
 Recipients API Routes - IDX-Based (Session IDs Hidden)
-Author: Ashutosh Rajesh
 Purpose: Manage user's recipient list
 
 Security Model:

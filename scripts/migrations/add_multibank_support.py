@@ -1,6 +1,5 @@
 """
 Database Migration: Multi-Bank Support
-Author: Ashutosh Rajesh
 Purpose: Add support for multiple bank accounts per user
 
 Changes:

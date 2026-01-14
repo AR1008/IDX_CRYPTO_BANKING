@@ -1,6 +1,5 @@
 """
 Event Manager - Simple Pub/Sub
-Author: Ashutosh Rajesh
 Purpose: Event communication between components
 """
 

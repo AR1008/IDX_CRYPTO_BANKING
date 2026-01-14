@@ -1,6 +1,5 @@
 """
 Travel Account Service
-Author: Ashutosh Rajesh
 Purpose: Manage international travel accounts with forex
 
 Features:

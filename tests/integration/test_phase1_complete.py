@@ -1,6 +1,5 @@
 """
 Phase 1 Complete Integration Test
-Author: Ashutosh Rajesh
 Purpose: Comprehensive end-to-end testing of Transaction → Mining → Blockchain flow
 
 Tests Cover:

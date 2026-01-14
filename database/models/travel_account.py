@@ -1,6 +1,5 @@
 """
 Travel Account Model
-Author: Ashutosh Rajesh
 Purpose: Temporary foreign bank accounts for international travel
 
 Travel Account Lifecycle:

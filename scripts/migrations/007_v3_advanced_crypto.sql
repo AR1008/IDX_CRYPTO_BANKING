@@ -1,7 +1,6 @@
 -- Migration 007: Advanced Cryptography V3.0
 -- Purpose: Add sequence numbers, batching, and cryptographic fields
 -- Date: 2025-12-27
--- Author: Ashutosh Rajesh
 
 -- ============================================================
 -- PART 1: Add V3.0 Fields to Transactions Table

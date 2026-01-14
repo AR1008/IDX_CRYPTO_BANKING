@@ -1,6 +1,5 @@
 """
 Flask Application Factory
-Author: Ashutosh Rajesh
 Purpose: Flask app with WebSocket support
 """
 

@@ -1,6 +1,5 @@
 """
 Split-Key Cryptography for Court Orders
-Author: Ashutosh Rajesh
 Purpose: Dual-key system for legal de-anonymization
 
 World's First Implementation:

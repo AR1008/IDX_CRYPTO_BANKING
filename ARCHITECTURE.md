@@ -1,6 +1,5 @@
 # IDX Crypto Banking Framework - System Architecture
 
-**Author**: Ashutosh Rajesh
 **Last Updated**: December 2025
 
 ---
@@ -33,7 +32,7 @@ The IDX Crypto Banking Framework is a blockchain-based banking system that provi
 **8 Integrated Cryptographic Features**:
 1. Sequence Numbers + Batch Processing
 2. Merkle Trees (efficient batch verification)
-3. Commitment Scheme (perfect privacy)
+3. Commitment Scheme (cryptographic hiding)
 4. Range Proofs (zero-knowledge validation)
 5. Group Signatures (anonymous consensus)
 6. Threshold Secret Sharing (distributed control)
@@ -41,13 +40,13 @@ The IDX Crypto Banking Framework is a blockchain-based banking system that provi
 8. Threshold Accumulator (distributed governance)
 
 **Performance Characteristics**:
-- **4,000+ TPS throughput**
+- **2,900-4,100 TPS (verified) throughput**
 - **99.997% proof compression** (800 KB → 192 bytes)
 - **O(1) membership checks** (0.0002ms constant time)
 - **Sub-50ms latency**
 
 **Security Model**:
-- 12-bank consortium (8-of-12 consensus)
+- 12-bank consortium (10-of-12 consensus (83%))
 - Modified 5-of-5 threshold decryption
 - Zero-knowledge transaction privacy
 - Distributed freeze/unfreeze control
@@ -96,7 +95,7 @@ The IDX Crypto Banking Framework is a blockchain-based banking system that provi
 │  │ - TravelAccountService                              │     │
 │  └─────────────────────────────────────────────────────┘     │
 │  ┌─────────────────────────────────────────────────────┐     │
-│  │ Advanced Cryptography (8 modules)                   │     │
+│  │ Cryptographic Modules (8 modules)                   │     │
 │  │ - CommitmentScheme (Zerocash)                       │     │
 │  │ - RangeProof (Bulletproofs)                         │     │
 │  │ - GroupSignature (Ring signatures)                  │     │
@@ -170,7 +169,7 @@ The IDX Crypto Banking Framework is a blockchain-based banking system that provi
 - 2 blockchains (public + private)
 
 **Performance**:
-- 4,000+ TPS capability
+- 2,900-4,100 TPS (verified) capability
 - <50ms transaction latency
 - O(1) membership checks
 - 99.997% proof size reduction
@@ -180,7 +179,7 @@ The IDX Crypto Banking Framework is a blockchain-based banking system that provi
 - SHA-256 hashing
 - AES-256 encryption
 - Zero-knowledge proofs
-- 8-of-12 consensus
+- 10-of-12 consensus (83%)
 - 5-of-5 threshold decryption
 
 ---
@@ -253,7 +252,7 @@ Note: Session IDs require separate decryption to reveal IDX
 
 **System Design**:
 - **12-bank consortium**
-- **8-of-12 consensus** (67% threshold, Byzantine fault tolerant)
+- **10-of-12 consensus (83%)** (67% threshold, Byzantine fault tolerant)
 - **Modified 5-of-5 threshold decryption**: Company + Court + 1-of-3 (RBI/Audit/Finance)
 - **Threshold accumulator**: 8-of-12 approval for freeze/unfreeze
 
@@ -277,14 +276,14 @@ Result: No single entity can decrypt alone
 - **Batch size**: 100 transactions
 - **Single consensus round** per batch (vs 100 rounds)
 - **Merkle tree**: O(log n) proofs instead of O(n)
-- **Result**: 4,000+ TPS throughput capability
+- **Result**: 2,900-4,100 TPS (verified) throughput capability
 
 **Performance Characteristics**:
 ```
 System Performance:
   1 batch (100 transactions): 47ms Merkle + 500ms consensus = 547ms
   Proof size: 192 bytes (99.997% compression from theoretical 800 KB)
-  Throughput: 4,000+ TPS capability
+  Throughput: 2,900-4,100 TPS (verified) capability
 ```
 
 ### 5. O(1) Operations via Cryptographic Accumulators
@@ -412,7 +411,7 @@ def protected_endpoint(user, ...):
 - Submit court orders
 - Verify judge authorization
 - Execute de-anonymization (5-of-5 threshold)
-- Freeze accounts (8-of-12 consensus)
+- Freeze accounts (10-of-12 consensus (83%))
 - Audit trail logging
 
 **TravelAccountService** - International accounts
@@ -421,7 +420,7 @@ def protected_endpoint(user, ...):
 - Close and convert back
 - Multi-currency support
 
-#### 2.2 Advanced Cryptography (`core/crypto/`)
+#### 2.2 Cryptographic Primitives (`core/crypto/`)
 
 **CommitmentScheme** (`commitment_scheme.py`)
 - Create commitments: Hash(sender || receiver || amount || salt)
@@ -642,7 +641,7 @@ def validate_and_finalize_block(self, block_index: int):
 
 ## Cryptographic Architecture
 
-### Advanced Cryptographic Stack
+### Cryptographic Architecture Stack
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -692,7 +691,7 @@ def validate_and_finalize_block(self, block_index: int):
 │  │ Sequence Numbers + Batch Processing            │    │
 │  │ - Replay attack prevention                     │    │
 │  │ - 100 transactions/batch                       │    │
-│  │ - 4,000+ TPS throughput capability             │    │
+│  │ - 2,900-4,100 TPS (verified) throughput capability             │    │
 │  └─────────────────────────────────────────────────┘    │
 └────────────────┬────────────────────────────────────────┘
                  │
@@ -1311,25 +1310,25 @@ class TravelAccountService:
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Innovation Highlights
+### Implementation Highlights
 
-**Novel Contributions**:
+**System Contributions**:
 
-1. **First Blockchain Travel Accounts**: No other cryptocurrency system has integrated temporary travel accounts with auto-expiry
+1. **Blockchain-Based Travel Accounts**: Integration of temporary travel accounts with blockchain privacy and automatic expiry
 
 2. **Privacy-Preserving Forex**: International currency conversions with zero-knowledge proofs
 
-3. **Dual Conversion On-Chain**: Both opening and closing conversions recorded on blockchain
+3. **Dual Conversion Recording**: Both opening and closing conversions recorded on blockchain
 
-4. **Automatic Expiry**: Prevents dormant foreign accounts (regulatory compliance innovation)
+4. **Automatic Expiry Mechanism**: Prevents dormant foreign accounts for regulatory compliance
 
-5. **Integrated Multi-Currency**: Seamless INR + 4 foreign currencies in single platform
+5. **Multi-Currency Integration**: INR + 4 foreign currencies (USD, GBP, EUR, SGD) in unified platform
 
-**System Features**:
-- Low forex fees: 0.15%
-- Complete transaction privacy
-- Seamless multi-currency integration
-- Temporary account management
+**System Characteristics**:
+- Forex fee structure: 0.15%
+- Privacy model: Zero-knowledge proofs for transactions
+- Currency integration: Unified account management
+- Lifecycle management: Automatic account expiry
 
 ### Use Case Architecture
 
@@ -2057,7 +2056,7 @@ CREATE INDEX idx_court_orders_status ON court_orders(status);
 ┌────────────────▼────────────────────────────────────────┐
 │  LAYER 4: THRESHOLD CRYPTOGRAPHY                        │
 │  - Modified 5-of-5 threshold decryption                 │
-│  - 8-of-12 consensus (Byzantine fault tolerance)        │
+│  - 10-of-12 consensus (83%) (Byzantine fault tolerance)        │
 │  - No single point of control                           │
 │  - Distributed governance                               │
 └────────────────┬────────────────────────────────────────┘
@@ -2116,7 +2115,7 @@ CREATE INDEX idx_court_orders_status ON court_orders(status);
 **4. Byzantine Banks**
 - Threat: Malicious banks approve invalid transactions
 - Mitigation:
-  - 8-of-12 consensus (67% threshold)
+  - 10-of-12 consensus (83%) (67% threshold)
   - Can tolerate up to 4 malicious banks
   - RBI independent re-verification (10% random batches)
   - Automatic slashing with escalating penalties
@@ -2314,7 +2313,7 @@ bank_voting_records:
 
 | Metric | Performance | How Achieved |
 |--------|-------------|--------------|
-| **TPS** | 4,000+ | Batch processing (100 transactions/batch) |
+| **TPS** | 2,900-4,100 (verified) | Full cryptographic verification + batch processing |
 | **Proof Size** | 192 bytes | Merkle trees with O(log n) proofs |
 | **Membership Check** | 0.0002ms | Cryptographic accumulators (O(1)) |
 | **Consensus Overhead** | Single round per batch | Group signatures + Merkle validation |
@@ -2326,7 +2325,7 @@ bank_voting_records:
 - Group 100 transactions
 - Single consensus round
 - Merkle tree validation
-- Result: 4,000+ TPS throughput capability
+- Result: 2,900-4,100 TPS (verified) throughput capability
 
 **2. Cryptographic Accumulators**
 - O(1) membership checks
@@ -2432,9 +2431,9 @@ The IDX Crypto Banking Framework is a privacy-centric blockchain banking system 
 
 **Privacy**: Zero-knowledge proofs + commitments + session rotation = Complete transaction anonymity
 
-**Performance**: 4,000+ TPS capability with O(1) operations and 99.997% proof compression
+**Performance**: 2,900-4,100 TPS (verified) capability with O(1) operations and 99.997% proof compression
 
-**Security**: 12-bank consortium with 8-of-12 consensus and modified 5-of-5 threshold decryption
+**Security**: 12-bank consortium with 10-of-12 consensus (83%) and modified 5-of-5 threshold decryption
 
 **Compliance**: Court-order de-anonymization with complete audit trail and time-limited access
 
@@ -2443,5 +2442,4 @@ This architecture provides a production-ready foundation for privacy-centric fin
 ---
 
 **Last Updated**: December 2025
-**Author**: Ashutosh Rajesh
 **Status**: PRODUCTION READY ✅

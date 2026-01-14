@@ -1,5 +1,4 @@
 -- Security Features Migration
--- Author: Ashutosh Rajesh
 -- Purpose: Add security and governance features to existing database
 --
 -- Changes:

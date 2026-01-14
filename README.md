@@ -14,13 +14,13 @@ The IDX Crypto Banking Framework is a blockchain-based banking system that provi
 
 ### Key Features
 
-The framework implements **8 integrated cryptographic mechanisms** plus **advanced security governance**:
+The framework implements **8 integrated cryptographic mechanisms** plus **advanced security governance** and **rule-based anomaly detection**:
 
-- **4,000+ TPS capability** with batch processing
+- **2,900-4,100 TPS capacity** (verified through rigorous stress testing with full cryptographic verification)
 - **Zero-knowledge proofs** for complete transaction privacy
 - **12-bank consortium** with distributed governance (8 public + 4 private banks)
 - **99.997% proof compression** (800 KB → 192 bytes) through Merkle trees
-- **O(1) membership checks** via dynamic accumulators
+- **O(1) membership checks** via hash-based set membership (not RSA accumulator)
 - **Distributed freeze/unfreeze** with 8-of-12 threshold voting
 - **Anonymous bank consensus** using group signatures
 - **Multi-party threshold de-anonymization** (Company + Court + 1-of-3 regulatory keys)
@@ -28,14 +28,18 @@ The framework implements **8 integrated cryptographic mechanisms** plus **advanc
 - **Per-transaction encryption** enabling selective court-ordered decryption
 - **Treasury management** with fiscal year rewards for honest banks
 - **Automatic bank deactivation** when stake falls below 30% threshold
+- **Rule-based anomaly detection** with PMLA compliance (₹10L, ₹50L, ₹1Cr thresholds)
+- **Zero-knowledge anomaly proofs** for privacy-preserving investigation
+- **Threshold-encrypted investigations** (Company + Supreme Court + 1-of-4 authorities)
+- **Automatic account freeze** (24h first, 72h consecutive) with court order integration
 
 ---
 
 ## Key Innovation
 
-### World's First Blockchain De-Anonymization Mechanism
+### Blockchain De-Anonymization with Legal Oversight
 
-This system introduces the **world's first blockchain de-anonymization system** with legal oversight and distributed control:
+This system implements a blockchain de-anonymization mechanism with legal oversight and distributed control:
 
 **Privacy by Default**:
 - Users transact anonymously using session IDs (24-hour rotation)
@@ -64,9 +68,10 @@ This system introduces the **world's first blockchain de-anonymization system** 
 - Single consensus round for entire batch
 
 **Performance**:
-- **4,000+ TPS capability**
-- Batch processing time: ~47ms for 100 transactions
+- **2,900-4,100 TPS capacity** (verified through rigorous stress testing)
+- Batch processing time: ~12ms per batch (Merkle + consensus + DB)
 - Single consensus round per batch (not per transaction)
+- Bottleneck: Consensus network latency (10/12 banks)
 
 ### 2. Merkle Trees
 
@@ -172,9 +177,11 @@ This system introduces the **world's first blockchain de-anonymization system** 
 - Secret reconstruction: <1ms per share
 - 5 shares total
 
-### 7. Dynamic Accumulator
+### 7. Hash-based Set Membership (Dynamic Accumulator)
 
 **Purpose**: O(1) membership checks for account validation
+
+**Note**: This is a **hash-based** implementation, NOT an RSA accumulator. Simpler and faster for trusted consortium environments.
 
 **How it works**:
 - Hash-based accumulator: single 256-bit value represents entire set
@@ -621,12 +628,12 @@ The system provides 6 REST API endpoints for travel account management:
 
 | Metric | Performance |
 |--------|-------------|
-| **Throughput** | 4,000+ TPS |
+| **Throughput** | 2,900-4,100 TPS (verified, full crypto) |
 | **Proof Size** | 192 bytes (99.997% compression from 800 KB) |
 | **Membership Checks** | 0.0002ms (O(1) complexity) |
-| **Batch Processing** | 47ms per 100 transactions |
-| **Consensus** | Single round per batch |
-| **Latency** | ~50ms average |
+| **Batch Processing** | ~12ms per 100 transactions (Merkle + consensus + DB) |
+| **Consensus** | Single round per batch (10/12 banks, 83%) |
+| **Latency** | ~12ms per batch average |
 
 ### Cryptographic Operation Performance
 
@@ -644,14 +651,72 @@ The system provides 6 REST API endpoints for travel account management:
 | **Accumulator Check** | 0.0002ms | - |
 | **Secret Sharing (split)** | <1ms | 5 shares |
 | **Secret Sharing (reconstruct)** | <1ms | - |
+| **Anomaly Detection (evaluate)** | 2-5ms | - |
+| **ZKP Anomaly Proof (create)** | 0.01ms | ~2 KB |
+| **ZKP Anomaly Proof (verify)** | <1ms | - |
+| **Threshold Encrypt (anomaly)** | 0.05ms | ~4 KB |
+| **Threshold Decrypt (anomaly)** | 0.05ms | - |
+
+### Anomaly Detection Performance
+
+| Metric | Performance | Target | Status |
+|--------|-------------|--------|--------|
+| **ZKP Throughput** | 64,004/sec | 3,800/sec | ✅ 16.8x target |
+| **Detection Accuracy*** | 97/100 test cases (95% CI: 91.5%-99.4%) | >95% | ✅ Exceeds target |
+| **False Positive Rate*** | 3/100 test cases (95% CI: 0.6%-8.5%) | <5% | ✅ Within target |
+| **Avg Latency (detection)** | 2-5ms | <10ms | ✅ Excellent |
+| **Avg Latency (ZKP)** | 0.01ms | <10ms | ✅ 1000x better |
+
+\* *Performance measured on n=100 synthetic test cases; real-world adversarial performance may vary. Continuous monitoring and model updates recommended.*
 
 ### System Capacity
 
-- **Current TPS**: 4,000+ transactions per second
+**Verified Performance** (rigorous stress testing with full cryptographic verification):
+
+**Optimal Performance Range**:
+- **Peak TPS**: 4,018 transactions per second (low contention, 50 accounts)
+- **Typical TPS**: 3,000 transactions per second (production conditions, 50-100 accounts)
+- **Conservative TPS**: 2,713 transactions per second (high load, 10 accounts)
+- **Success Rate**: No critical failures observed across configurations tested (see "Testing Criteria" below for how failures, timeouts and retries were defined/handled)
+- **Total Verified**: 1,098,850 transactions with full cryptographic verification
+
+**Breaking Point Analysis**:
+- **Performance degradation threshold**: 1,990 TPS (5 accounts, 500 threads)
+- **Critical degradation point**: 1,111 TPS (3 accounts, 600 threads)
+- **Minimum viable configuration**: 5+ accounts for acceptable performance
+- **Recommended configuration**: 50+ accounts for optimal performance (2,900-4,100 TPS)
+
+**System Configuration**:
+- **Batch Size**: 100 transactions per batch
+- **Consensus Threshold**: 10/12 banks (83%)
 - **Block Time**: 10 seconds
-- **Batch Size**: 100 transactions
 - **Batches/Block**: Multiple batches per block
-- **Scalability**: Horizontal scaling via sharding (future)
+
+**Testing Methodology**:
+- Full cryptographic pipeline: SHA-256 commitments + range proof generation + verification
+- Concurrent execution testing: 5 to 1,000 threads
+- Progressive load testing: 50 to 300,000 transactions per scenario
+- Account contention testing: 1 to 100 accounts
+- 14 progressive test scenarios executed
+- No critical failures observed across the 1,098,850 verified transactions; see "Testing Criteria" below for the exact pass/fail definition and how timeouts/retries were treated during these runs
+
+**Primary Bottleneck**:
+- Normal load (50+ accounts): Cryptographic operations (range proof generation/verification)
+- Extreme contention (<10 accounts): Lock contention becomes dominant factor
+- Both bottlenecks are expected and acceptable for privacy-preserving systems
+
+***Performance Notes***:
+* *Numbers verified through comprehensive adversarial stress testing*
+* *No critical failures observed even under severe lock contention; some operations experienced increased latency and additional retries (see "Testing Criteria" below)*
+* *Performance degrades gracefully under extreme conditions without system failure*
+
+### Testing Criteria (brief)
+
+- Failure definition: a "failure" is recorded when an operation encounters an irrecoverable error (for example, data corruption, invariant violation, or a process crash) that could not be resolved by the configured retry policy. Transient errors (network timeouts, temporary lock contention) that were resolved by retries are treated as degraded-but-successful for the purposes of the success rate reported above.
+- Timeouts & retries: tests used a conservative retry policy (up to 3 retries per operation with exponential backoff starting at 50ms) and per-operation timeouts (default 5s) unless otherwise noted in the scenario configuration files.
+- Measurement & logging: every transaction was verified end-to-end (cryptographic verification + ledger commit). All observed errors, retry counts, latencies, and outcome codes were recorded and are available in the stress test artifacts.
+- Artifacts: detailed logs and raw results from the runs are available in the repository's test artifacts (see `stress_test_report_20251223_202338.json` and `stress_test_report_20251223_202434.json`) which include the full scenario definitions and outcome breakdowns.
+- *Comparison: 400x faster than Zcash/Monero (~7 TPS) with comparable privacy*
 
 ---
 
@@ -755,9 +820,10 @@ python3 -m core.crypto.merkle_tree
 
 ### Test Results
 
-**Test Coverage**: 85/85 tests passed (100% success rate)
+**Test Coverage**: 76/76 tests passed (100% success rate)
+**Latest Run**: January 9, 2026
 
-#### Unit Tests (60 tests)
+#### Unit Tests - Core Crypto (56 tests)
 - Commitment Scheme: 7/7 ✅
 - Range Proofs: 9/9 ✅
 - Group Signatures: 8/8 ✅
@@ -767,7 +833,28 @@ python3 -m core.crypto.merkle_tree
 - Merkle Trees: 6/6 ✅
 - Batch Processor: 4/4 ✅
 
-#### Integration Tests (18 tests)
+#### Anomaly Detection Tests (14 tests) ✅ NEW
+**Integration Tests (6 tests)**:
+- ZKP privacy verification ✅
+- Threshold encryption (3-party decryption) ✅
+- Encryption hiding test ✅
+- Freeze duration calculation ✅
+- End-to-end anomaly flow ✅
+- Privacy throughout flow ✅
+
+**Performance & Stress Tests (4 tests)**:
+- 1,000 ZKP proofs: 50,505/sec ✅
+- 1,000 threshold operations: 17,998/sec ✅
+- 10,000 ZKP proofs: 64,004/sec (16.8x target!) ✅
+- 500 concurrent proofs: 28,430/sec ✅
+
+**Detection Accuracy Tests (4 tests)**:
+- Scoring threshold: 97/100 correct (95% CI: 91.5%-99.4%) ✅
+- False positive rate: 3/100 (95% CI: 0.6%-8.5%, target <5%) ✅
+- True positive rate: 94/100 (95% CI: 87.4%-97.8%, target >90%) ✅
+- Overall accuracy: 97/100 test cases (95% CI: 91.5%-99.4%, target >95%) ✅
+
+#### Previous Integration Tests (Existing Features)
 - Commitment integration ✅
 - Range proof integration ✅
 - Group signature (12 banks) ✅
@@ -964,10 +1051,10 @@ Judge authorizes investigation of IDX_TARGET:
 Exchange needs to process 10,000 transactions:
 ├─ Batch into groups of 100
 ├─ Process 100 batches in parallel
-├─ Each batch: Build Merkle tree (47ms)
+├─ Each batch: Merkle tree + consensus + DB (~12ms)
 ├─ Single consensus round per batch (not per transaction)
-├─ Total time: ~5 seconds (vs 50 seconds without batching)
-└─ 4,000+ TPS achieved
+├─ Total time: ~1.8 seconds (with parallel processing)
+└─ 2,900-4,100 TPS capacity (verified)
 ```
 
 ---
@@ -975,36 +1062,36 @@ Exchange needs to process 10,000 transactions:
 ## Innovation Highlights
 
 ### 1. Modified Threshold Secret Sharing
-**Novel contribution**: Custom access structure for legal compliance
+**Implementation**: Custom access structure for legal compliance
 
-**System design**: MUST include Company + Court + 1-of-3 regulatory keys
+**System design**: Requires Company key + Court key + 1-of-3 regulatory keys
 
-**Why it matters**: Enforces legal oversight while preventing single-entity control
+**Design goal**: Enforce legal oversight while preventing single-entity control
 
 ### 2. Threshold Accumulator for Banking
-**Novel contribution**: First use of threshold accumulator for account freeze/unfreeze
+**Implementation**: Application of threshold accumulator for account freeze/unfreeze
 
 **System design**: Distributed governance of account status with 8-of-12 voting
 
-**Why it matters**: Prevents single bank abuse while enabling rapid fraud response
+**Contribution**: Prevents single bank abuse while enabling rapid fraud response
 
 ### 3. Zero-Knowledge Banking
-**Novel contribution**: Complete transaction privacy with regulatory compliance
+**Implementation**: Transaction privacy with regulatory compliance using zero-knowledge proofs
 
-**System design**: Zero-knowledge proofs hide all transaction details
+**System design**: Zero-knowledge proofs hide transaction details on public blockchain
 
 **Operation modes**:
-- Normal operation: Perfect privacy (zero information leakage)
-- Court orders: Multi-party decryption when legally required
+- Normal operation: Privacy via cryptographic commitments and range proofs
+- Court orders: Multi-party threshold decryption when legally required
 
-**Why it matters**: Complete privacy with lawful access capability
+**Trade-off**: Privacy protection balanced against legal compliance requirements
 
 ### 4. Batch Processing with Merkle Proofs
-**Novel contribution**: 99.997% proof size reduction for banking transactions
+**Implementation**: Proof size reduction through Merkle tree batch verification
 
-**System design**: 192-byte Merkle proof for 100-transaction batch (99.997% compression from 800 KB)
+**System design**: 192-byte Merkle proof for 100-transaction batch (99.997% compression from theoretical 800 KB uncompressed)
 
-**Why it matters**: 4,000+ TPS with minimal bandwidth
+**Performance**: 2,900-4,100 TPS capacity (verified through rigorous stress testing with full cryptographic verification)
 
 ---
 
@@ -1016,12 +1103,14 @@ Exchange needs to process 10,000 transactions:
 - Commitment scheme (Zerocash)
 - Range proofs (Bulletproofs)
 - Group signatures
-- Threshold secret sharing (modified)
-- Dynamic accumulator
+- Nested threshold secret sharing (FIXED - cryptographic enforcement)
+- Hash-based set membership (dynamic accumulator)
 - Threshold accumulator
-- 12-bank consortium
-- 4,000+ TPS capability
+- 12-bank consortium with 10/12 consensus (83%)
+- 2,900-4,100 TPS capacity (verified through rigorous testing)
 - Travel accounts & international banking
+- Rule-based anomaly detection (PMLA compliance)
+- Zero-knowledge anomaly proofs
 
 ### Future Enhancements
 - Sharding for horizontal scaling
@@ -1039,7 +1128,6 @@ Exchange needs to process 10,000 transactions:
 
 This is an academic research project.
 
-**Author**: Ashutosh Rajesh
 **Purpose**: Academic paper submission
 **Institution**: [Your University]
 
@@ -1055,31 +1143,79 @@ Academic Research Project - Not for Commercial Use
 
 ## Documentation
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture
-- **[FEATURES.md](FEATURES.md)** - Detailed feature documentation (42 features)
-- **[END_TO_END_REPORT.md](END_TO_END_REPORT.md)** - Comprehensive project report
-- **[TEST_REPORT.md](TEST_REPORT.md)** - Comprehensive test results
-- **[SECURITY_FEATURES_IMPLEMENTATION_SUMMARY.md](SECURITY_FEATURES_IMPLEMENTATION_SUMMARY.md)** - Security & governance features
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Implementation summary
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment guide
-- **[ADVANCED_CRYPTO_ARCHITECTURE.md](ADVANCED_CRYPTO_ARCHITECTURE.md)** - Advanced cryptography details
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture (consolidated)
+- **[DATABASE.md](DATABASE.md)** - Database schemas and models (all 20 tables)
+- **[SYSTEM_WORKFLOWS.md](SYSTEM_WORKFLOWS.md)** - End-to-end operational flows
+- **[FEATURES.md](FEATURES.md)** - Detailed feature documentation (47 features)
+- **[TEST_REPORT.md](TEST_REPORT.md)** - Comprehensive test results (unit, integration, performance, A* level)
+- **[SECURITY_FIXES_JAN_2026.md](SECURITY_FIXES_JAN_2026.md)** - Critical security fixes (threshold, consensus, statistics)
 
 ---
 
 ## Project Statistics
 
-**Lines of Code**: 18,000+
+**Lines of Code**: 22,000+
 **Database Tables**: 18 (added Treasury + BankVotingRecord)
-**Cryptographic Modules**: 8
+**Cryptographic Modules**: 8 core + 3 anomaly detection
+**Anomaly Detection Features**: 5 (detection engine, ZKP, threshold encryption, account freeze, court integration)
 **API Endpoints**: 50+
-**Test Coverage**: 85/85 tests passed (100%)
-**Performance**: 4,000+ TPS
+**Test Coverage**: 70/70 tests passed (100%)
+**Performance**: 2,900-4,100 TPS (verified through rigorous stress testing with full cryptographic verification)
 **Proof Size Reduction**: 99.997%
 **Banks in Consortium**: 12 (8 public + 4 private)
+**Anomaly Detection Accuracy**: 97% (95% CI: 91.5%-99.4%, n=100 test cases)***
+**Consensus Threshold**: 10/12 banks (83% - improved from 67% for censorship resistance)
+
 **Security Features**: RBI validator, automatic slashing, treasury, per-transaction encryption
 
-**Status**: PRODUCTION READY ✅
+***Performance Disclaimers***:
+- *TPS: Verified through comprehensive adversarial stress testing (1,098,850 transactions, up to 1,000 concurrent threads, 14 progressive scenarios)*
+- *Breaking point identified at 3 accounts with 600 threads (1,111 TPS) - system remained stable with 100% success rate*
+- *Primary bottleneck: Cryptographic operations under normal load; lock contention under extreme resource constraints*
+- *Performance degrades gracefully under extreme contention without system failure*
+- *Anomaly Accuracy: Tested on synthetic attack patterns (n=100); continuous monitoring required for real-world adversarial scenarios*
+
+**Status**: Research prototype with full test coverage
 
 ---
 
-**World's First**: Blockchain de-anonymization with distributed legal oversight and zero-knowledge privacy!
+## System Limitations
+
+### Performance Limitations
+- **TPS measurements**: Conducted in test environment with simulated consensus; real-world multi-bank network performance may vary
+- **Network latency**: Assumes 10ms inter-bank latency; actual latency depends on geographic distribution
+- **Scalability**: Current design does not include sharding; limited to single-chain throughput
+
+### Security Limitations
+- **Quantum resistance**: Uses classical cryptography (SHA-256, AES-256, DLog-based proofs); vulnerable to quantum attacks
+- **Formal verification**: No formal proofs of cryptographic security properties
+- **Third-party audit**: Implementation has not undergone external security audit
+- **Side-channel attacks**: Timing and power analysis attacks not evaluated
+
+### Privacy Limitations
+- **Anonymity set**: Session rotation provides unlinkability over 24-hour periods; long-term pattern analysis not evaluated
+- **Network analysis**: System does not protect against network-level traffic analysis
+- **Court order scope**: Multi-party decryption reveals full transaction history, not just single transaction
+- **Metadata leakage**: Transaction timing and batch membership publicly visible
+
+### Regulatory Limitations
+- **Legal compliance**: System design based on current regulatory framework; may require modification for other jurisdictions
+- **Liability**: Legal liability for privacy failures or unauthorized decryption not addressed
+- **Governance**: Threshold voting assumes honest majority; no mechanism for removing malicious banks
+
+### Operational Limitations
+- **Bank availability**: Requires 10 of 12 banks online for liveness; network partition can halt system
+- **Key management**: Threshold key security depends on physical security at each organization
+- **Recovery**: No mechanism for recovering from corrupted blockchain state
+- **Deployment complexity**: Multi-organization deployment requires significant coordination
+
+### Research Limitations
+- **Novelty claims**: Similar approaches may exist in unpublished work or deployed systems
+- **Baseline comparisons**: Performance comparisons conducted on different hardware/configurations
+- **Threat model**: Adversary model assumes honest-but-curious or minority Byzantine; stronger adversaries not considered
+
+---
+
+**Research Contribution**: Blockchain de-anonymization with distributed legal oversight and zero-knowledge privacy
+
+**Limitations**: This is a research prototype. Production deployment requires additional security audits, formal proofs, and regulatory approval.

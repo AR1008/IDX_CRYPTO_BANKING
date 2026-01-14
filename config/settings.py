@@ -1,6 +1,5 @@
 """
 IDX Crypto Banking - Configuration Settings
-Author: Ashutosh Rajesh
 Purpose: Central configuration for entire application
 
 This file stores ALL settings in one place:

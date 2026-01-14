@@ -1,6 +1,5 @@
 """
 Travel Accounts API Routes
-Author: Ashutosh Rajesh
 Purpose: API endpoints for international travel accounts
 
 Endpoints:

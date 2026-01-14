@@ -407,5 +407,4 @@ python scripts/testing/generate_transactions.py --count 10000 --pattern steady
 ---
 
 **Created**: December 26, 2025
-**Author**: Ashutosh Rajesh
 **Part of**: Priority 7 - Test Data Generation

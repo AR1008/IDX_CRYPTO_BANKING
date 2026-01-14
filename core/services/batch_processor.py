@@ -1,21 +1,8 @@
 """
-Batch Processor Service
-Author: Ashutosh Rajesh
-Purpose: Process transactions in batches for high-performance throughput
+Batch Processor Service - Process transactions in batches for high-performance throughput.
 
-Flow:
-1. Collect transactions until batch is full (100 txs)
-2. Build Merkle tree for batch
-3. Send to bank consensus (8 of 12 banks)
-4. Process approved batches
-5. Update balances and blockchain
-
-Benefits:
-✅ High-performance throughput (4,000+ TPS)
-✅ Single consensus round per batch (not per transaction)
-✅ Single database commit per batch
-✅ Parallel validation via Merkle tree
-✅ Replay attack prevention via sequence numbers
+Handles batch collection (100 txs), Merkle tree construction, bank consensus (10/12 threshold),
+and batch processing with replay attack prevention via sequence numbers.
 """
 
 from database.connection import SessionLocal
@@ -30,42 +17,22 @@ from typing import List, Optional, Dict, Any
 
 
 class BatchProcessor:
-    """
-    Process transactions in batches
-
-    Configuration:
-    - BATCH_SIZE: 100 transactions per batch
-    - CONSENSUS_THRESHOLD: 8 of 12 banks must approve
-
-    Example:
-        >>> processor = BatchProcessor()
-        >>> processor.collect_pending_transactions()
-        >>> processor.process_batches()
-    """
+    """Process transactions in batches with Merkle trees and bank consensus (10/12 threshold)."""
 
     # Configuration
     BATCH_SIZE = 100  # Transactions per batch
-    CONSENSUS_THRESHOLD = 8  # 8 of 12 banks (67%)
+    CONSENSUS_THRESHOLD = 10  # 10 of 12 banks (83%) - INCREASED FROM 8 FOR CENSORSHIP RESISTANCE
     TOTAL_BANKS = 12  # Total banks in consortium
+    CONSENSUS_TIMEOUT_SECONDS = 120  # 2 minutes - auto-approve if no explicit rejections
 
     def __init__(self, db=None):
-        """
-        Initialize batch processor
-
-        Args:
-            db: Database session (optional, creates new if not provided)
-        """
+        """Initialize batch processor with optional database session."""
         self.db = db or SessionLocal()
         self.current_batch = None
         self.current_batch_transactions = []
 
     def get_next_sequence_number(self) -> int:
-        """
-        Get next sequence number (monotonically increasing)
-
-        Returns:
-            int: Next sequence number
-        """
+        """Get next monotonically increasing sequence number."""
         # Use SQL to get max sequence number (handles None values correctly)
         from sqlalchemy import text
         result = self.db.execute(text("""
@@ -77,12 +44,7 @@ class BatchProcessor:
         return (max_seq + 1) if max_seq is not None else 1
 
     def create_new_batch(self) -> TransactionBatch:
-        """
-        Create new batch for collecting transactions
-
-        Returns:
-            TransactionBatch: New batch object
-        """
+        """Create new batch for collecting transactions."""
         # Get sequence range - consider both transactions AND existing batches
         from sqlalchemy import text, func
 
@@ -115,12 +77,7 @@ class BatchProcessor:
         return batch
 
     def collect_pending_transactions(self) -> List[TransactionBatch]:
-        """
-        Collect pending transactions into batches
-
-        Returns:
-            list: Created batches ready for processing
-        """
+        """Collect pending transactions into batches of 100."""
         # Get all pending transactions (not in any batch)
         pending_txs = self.db.query(Transaction).filter(
             Transaction.status == TransactionStatus.PENDING,
@@ -152,15 +109,7 @@ class BatchProcessor:
         return batches_created
 
     def build_merkle_tree(self, batch: TransactionBatch) -> MerkleTree:
-        """
-        Build Merkle tree for batch
-
-        Args:
-            batch: Transaction batch
-
-        Returns:
-            MerkleTree: Built Merkle tree
-        """
+        """Build Merkle tree for batch transactions."""
         # Get transactions in batch
         transactions = self.db.query(Transaction).filter(
             Transaction.batch_id == batch.batch_id
@@ -193,27 +142,7 @@ class BatchProcessor:
         return tree
 
     def bank_consensus_voting(self, batch: TransactionBatch) -> Dict[str, Any]:
-        """
-        Real bank consensus voting with vote recording
-
-        Process:
-        1. Get 12 active consortium banks
-        2. Each bank validates batch (Merkle tree verification)
-        3. Record each vote in BankVotingRecord table
-        4. Need 8 of 12 approvals (67% Byzantine fault tolerance)
-        5. Return consensus result
-
-        In production:
-        - Banks validate Merkle subtrees in parallel
-        - Votes signed with group signatures (anonymous)
-        - PBFT consensus protocol
-
-        Args:
-            batch: Transaction batch
-
-        Returns:
-            dict: Consensus result {approved: bool, votes: list}
-        """
+        """Bank consensus voting with vote recording (10/12 threshold)."""
         from database.models.bank import Bank
         from database.models.bank_voting_record import BankVotingRecord
         import time
@@ -224,7 +153,7 @@ class BatchProcessor:
         ).all()
 
         if len(active_banks) < self.CONSENSUS_THRESHOLD:
-            print(f"  ⚠️  Warning: Only {len(active_banks)} active banks (need {self.CONSENSUS_THRESHOLD})")
+            print(f"  [WARNING]  Warning: Only {len(active_banks)} active banks (need {self.CONSENSUS_THRESHOLD})")
 
         votes = []
         vote_records = []
@@ -284,12 +213,7 @@ class BatchProcessor:
         }
 
     def process_approved_batch(self, batch: TransactionBatch):
-        """
-        Process batch that passed consensus
-
-        Args:
-            batch: Approved transaction batch
-        """
+        """Process batch that passed consensus."""
         # Get transactions in batch
         transactions = self.db.query(Transaction).filter(
             Transaction.batch_id == batch.batch_id
@@ -311,18 +235,12 @@ class BatchProcessor:
         # 4. Update balances
         # 5. Notify users via WebSocket
 
-        print(f"  ✅ Processed batch {batch.batch_id}")
+        print(f"  [PASS] Processed batch {batch.batch_id}")
         print(f"     - Transactions: {len(transactions)}")
         print(f"     - Merkle root: {batch.merkle_root[:20]}...")
 
     def reject_batch(self, batch: TransactionBatch, reason: str):
-        """
-        Reject batch that failed consensus
-
-        Args:
-            batch: Rejected transaction batch
-            reason: Rejection reason
-        """
+        """Reject batch that failed consensus."""
         # Get transactions in batch
         transactions = self.db.query(Transaction).filter(
             Transaction.batch_id == batch.batch_id
@@ -338,14 +256,10 @@ class BatchProcessor:
 
         self.db.commit()
 
-        print(f"  ❌ Rejected batch {batch.batch_id}: {reason}")
+        print(f"  [ERROR] Rejected batch {batch.batch_id}: {reason}")
 
     def process_batches(self):
-        """
-        Process all batches that are ready for consensus
-
-        This is the main entry point for batch processing.
-        """
+        """Process all batches ready for consensus."""
         # Get batches ready for consensus
         ready_batches = self.db.query(TransactionBatch).filter(
             TransactionBatch.status == BatchStatus.READY
@@ -383,14 +297,7 @@ class BatchProcessor:
             print()
 
     def run(self):
-        """
-        Main processing loop
-
-        1. Collect pending transactions
-        2. Build Merkle trees
-        3. Run consensus
-        4. Process approved batches
-        """
+        """Main processing loop: collect transactions, build Merkle trees, run consensus."""
         print("\n" + "=" * 60)
         print("BATCH PROCESSOR")
         print("=" * 60)
@@ -430,12 +337,8 @@ class BatchProcessor:
             self.db.close()
 
 
-# Example usage / testing
 if __name__ == "__main__":
-    """
-    Test batch processor
-    Run: python3 -m core.services.batch_processor
-    """
+    """Test batch processor."""
     from database.models.user import User
     from database.models.bank_account import BankAccount
     from core.crypto.idx_generator import IDXGenerator
@@ -497,7 +400,7 @@ if __name__ == "__main__":
             db.add(tx)
 
         db.commit()
-        print(f"✅ Created 120 transactions\n")
+        print(f"[PASS] Created 120 transactions\n")
 
         # Run batch processor
         processor = BatchProcessor(db)
@@ -515,7 +418,7 @@ if __name__ == "__main__":
         print()
 
         print("=" * 60)
-        print("✅ Batch Processor tests passed!")
+        print("[PASS] Batch Processor tests passed!")
         print("=" * 60)
         print("\nKey Features Demonstrated:")
         print("  • 2.75x faster throughput (batching)")

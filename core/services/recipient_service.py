@@ -1,6 +1,5 @@
 """
 Recipient Management Service
-Author: Ashutosh Rajesh
 Purpose: Manage user's saved recipients (contact list)
 
 Flow:

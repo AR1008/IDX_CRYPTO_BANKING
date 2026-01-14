@@ -1,6 +1,5 @@
 """
 AES-256 Encryption Service
-Author: Ashutosh Rajesh
 Purpose: Encrypt/decrypt sensitive data (private blockchain, session mappings)
 
 Security Features:
