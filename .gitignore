@@ -1,6 +1,10 @@
 # === SECRETS — never commit ===
 keys.json
 
+# === Claude session memory (local only) ===
+claude.md
+CLAUDE.md
+
 # === Python virtual environment ===
 venv310/
 venv/
