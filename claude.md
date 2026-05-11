@@ -366,19 +366,20 @@ Detection accuracy: 97% (95% CI: 91.5%–99.4%, n=100).
 
 ---
 
-## 14. VALIDATED BENCHMARK NUMBERS (master run 2026-03-02)
+## 14. VALIDATED BENCHMARK NUMBERS (master run 2026-05-11)
 
 **Hardware**: Apple M1 Pro (arm64), 10 cores, 16 GB, macOS Darwin 25.3.0
-**Method**: 100 trials (20 for anomaly engine), discard first 5, report mean/median/p95/stdev
+**Method**: 100 trials (20 for anomaly engine), discard first 5, report mean/p95/stdev
 **Full results**:
 - `tests/benchmarks/results/validated_20260227_143449.json` (original 7-section run)
-- `tests/benchmarks/results/master_20260302_203927.json` ← **use this for the paper**
+- `tests/benchmarks/results/master_20260302_203927.json` (previous master run)
+- `tests/benchmarks/results/master_20260511_130603.json` ← **use this for the paper**
 
 ### Bulletproofs (Rust dalek v4, Ristretto255)
-| Operation | Mean | Median | p95 |
-|-----------|------|--------|-----|
-| Prove 64-bit | **8.75 ms** | 8.70 ms | 9.01 ms |
-| Verify 64-bit | **2.09 ms** | 2.08 ms | 2.20 ms |
+| Operation | Mean | p95 |
+|-----------|------|-----|
+| Prove 64-bit | **8.80 ms** | 9.09 ms |
+| Verify 64-bit | **2.19 ms** | 2.26 ms |
 
 Proof sizes (exact, hardware-independent):
 8-bit: 480 B | 16-bit: 544 B | 32-bit: 608 B | **64-bit: 672 B**
@@ -386,65 +387,71 @@ Proof sizes (exact, hardware-independent):
 ### Batch Verification at B=100
 | Strategy | ms total | ms/proof | Speedup |
 |----------|----------|----------|---------|
-| Sequential | 210.2 | 2.10 | 1× |
-| Native Rust `bp_verify_batch` | 112.5 | **1.12** | 1.87× |
-| Fork pool (8 cores, pre-warmed) | 35.5 | **0.36** | 5.92× |
+| Sequential | 210.0 | 2.10 | 1× |
+| Native Rust `bp_verify_batch` | 114.4 | **1.14** | 1.84× |
+| Fork pool (8 cores, pre-warmed) | 35.6 | **0.36** | 5.90× |
 
 ### Core Primitives
 | Operation | Mean |
 |-----------|------|
 | Pedersen commit | 4.60 ms |
-| Pedersen verify_opening | 4.54 ms |
+| Pedersen verify_opening | 4.49 ms |
 | Commitment size (SEC1 compressed) | 33 bytes |
-| Schnorr ZKP prove (anomaly) | 11.28 ms |
-| Schnorr ZKP verify | 9.05 ms (~110/sec) |
-| BBS04 sign (BN254) | 92.31 ms |
-| BBS04 verify | 141.29 ms |
-| BBS04 open (traceability) | 1.66 ms |
+| Schnorr ZKP prove (anomaly) | 11.56 ms |
+| Schnorr ZKP verify | 8.83 ms (~113/sec) |
+| BBS04 sign (BN254) | 93.87 ms |
+| BBS04 verify | 144.08 ms |
+| BBS04 open (traceability) | 1.68 ms |
 | BBS04 signature size | 939 bytes |
 
 ### Simple Range Proof — Schnorr OR-proofs (CDS 1994)
 | Bit width | prove_mean | verify_mean | Used for |
 |-----------|-----------|------------|---------|
-| 8-bit | 152.3 ms | 135.7 ms | baseline |
-| 14-bit | 232.9 ms | 204.7 ms | velocity suspicious branch |
-| 16-bit | 264.6 ms | 232.8 ms | structuring STRUCTURING branch |
-| 20-bit | 328.8 ms | 288.1 ms | structuring BELOW branch |
-| 24-bit | 392.2 ms | 344.3 ms | structuring ABOVE branch |
+| 8-bit | 152.1 ms | 136.7 ms | baseline |
+| 14-bit | 232.5 ms | 206.6 ms | velocity suspicious branch |
+| 16-bit | 264.4 ms | 233.2 ms | structuring STRUCTURING branch |
+| 20-bit | 329.0 ms | 291.1 ms | structuring BELOW branch |
+| 24-bit | 393.5 ms | 344.1 ms | structuring ABOVE branch |
 
 ### R_velocity ZK Circuit (Gap 2 — CBC velocity rule, core/crypto/real/velocity_zkp.py)
 | Scenario | is_suspicious | prove_mean | verify_mean |
 |----------|--------------|-----------|------------|
-| not_suspicious 1h (count=3 < T=5) | No | 61.0 ms | 52.6 ms |
-| suspicious 1h (count=7 ≥ T=5) | Yes | 237.1 ms | 205.1 ms |
-| not_suspicious 24h (count=9 < T=10) | No | 77.0 ms | 66.6 ms |
-| suspicious 7d (count=60 ≥ T=50) | Yes | 236.9 ms | 205.3 ms |
+| not_suspicious 1h (count=3 < T=5) | No | 61.1 ms | 51.9 ms |
+| suspicious 1h (count=7 ≥ T=5) | Yes | 236.3 ms | 204.5 ms |
+| not_suspicious 24h (count=9 < T=10) | No | 76.8 ms | 65.7 ms |
+| suspicious 7d (count=60 ≥ T=50) | Yes | 236.9 ms | 203.9 ms |
 
 All 4 proofs verified correctly ✓ — suspicious branch requires 14-bit OR-proof (~4× slower).
 
 ### R_structuring ZK Circuit (Gap 3 — CBC structuring rule, core/crypto/real/structuring_zkp.py)
 | Branch | is_structuring | prove_mean | prove_p95 | verify_mean |
 |--------|---------------|-----------|----------|------------|
-| BELOW (amount < ₹9.5L) | No | 332.9 ms | 335.1 ms | 288.2 ms |
-| STRUCTURING (₹9.5L ≤ amount < ₹10L) | Yes | 268.6 ms | 270.5 ms | 232.9 ms |
-| ABOVE (amount ≥ ₹10L) | No | 398.1 ms | 403.6 ms | 346.1 ms |
+| BELOW (amount < ₹9,500) | No | 332.6 ms | 336.0 ms | 287.5 ms |
+| STRUCTURING (₹9,500 ≤ amount < ₹10,000) | Yes | 268.3 ms | 270.8 ms | 232.8 ms |
+| ABOVE (amount ≥ ₹10,000) | No | 398.0 ms | 405.0 ms | 342.9 ms |
 
 All 3 branches verified correctly ✓ — ABOVE branch needs 24-bit range proof (widest range).
 
-### Anomaly Detection Engine (end-to-end, mock DB, 20 trials)
-**All amounts in paise. Prototype thresholds: T1=5,000,000p(₹50,000) | T2=10,000,000p(₹1,00,000) | PMLA=1,000,000p(₹10,000). Re-run benchmark_master after 2026-04-28 fix to update full_flag row.**
+### Anomaly Detection Engine (end-to-end, mock DB)
+**All amounts in paise. Thresholds: T1=5,000,000p(₹50,000) | T2=10,000,000p(₹1,00,000) | PMLA=1,000,000p(₹10,000).**
+**full_flag: amount ≥ MAX_AMOUNT → structuring ZKP skipped (ABOVE_MAX sentinel); ZKP fix applied 2026-05-11.**
 | Scenario | mean_ms | p95_ms | v_proofs | s_proofs | flags | requires_investigation |
 |----------|---------|--------|---------|---------|-------|----------------------|
-| clean_tx (100,000p = ₹1,000) | 393.0 | 399.4 | 1 | 1 | — | False |
-| high_value (7,000,000p = ₹70,000) | 457.6 | 466.4 | 1 | 1 | HIGH_VALUE_TIER_1, PMLA | False (score=25) |
-| high_velocity (100,000p + 12tx/1h) | 572.5 | 585.2 | 1 | 1 | HIGH_VELOCITY_1H_12 | False (score=30) |
-| full_flag (11,000,000p = ₹1,10,000 + vel=12) | RE-RUN NEEDED | — | 1 | 1 | HIGH_VALUE_T2+VELOCITY | **True (score=70)** |
+| clean_tx (100,000p = ₹1,000) | 397.1 | 429.0 | 1 | 1 | — | False |
+| high_value (7,000,000p = ₹70,000) | 456.8 | 463.6 | 1 | 1 | HIGH_VALUE_TIER_1, PMLA | False (score=25) |
+| high_velocity (100,000p + 12tx/1h) | 566.7 | 574.0 | 1 | 1 | HIGH_VELOCITY_1H_12 | False (score=30) |
+| full_flag (11,000,000p = ₹1,10,000 + vel=12) | 237.9 | 254.4 | 1 | 1 | HIGH_VALUE_T2+VELOCITY | **True (score=70)** |
 
 ### Breaking Point Analysis (concurrent OR-proof loads 1–50)
 Python OR-proofs are **GIL-bound** — EC arithmetic serialises on 1 thread regardless of concurrency:
-- Velocity ZK: **~4.20 proofs/sec** (flat at loads 1–50, no degradation)
+- Velocity ZK: **~4.19 proofs/sec** (flat at loads 1–50, no degradation)
 - Structuring ZK: **~3.67 proofs/sec** (flat at loads 1–50, no degradation)
 - No breaking points detected — honest GIL ceiling; multiprocessing gives 5.9× speedup (fork-pool)
+
+### TPS (Config A / A2 / A2+batch)
+- Config A (Python EC only): **55.5 TPS** (18.0 ms/tx)
+- Config A2 (Python + Rust BP): **64.2 TPS** (15.6 ms/tx)
+- Config A2+batch (native bp_verify_batch): **68.8 TPS** (1454 ms/100 tx)
 
 ### Paper Comparison Table
 | System | Prove (ms) | Verify (ms) | Size (B) | Trusted Setup | AML in ZK |
@@ -452,9 +459,10 @@ Python OR-proofs are **GIL-bound** — EC arithmetic serialises on 1 thread rega
 | Zerocash S&P 2014 | ~87,000 | <6 | 288 | YES | None |
 | Platypus CCS 2022 | 110–730 (client) | 0.89 | 418–1122 | YES | Balance limits |
 | Bulletproofs S&P 2018 | ~36 | ~11 | ~674 | NO | None |
-| **ZK-AML (this work)** | **8.75** | **2.09** | **672** | **NO** | **PMLA-class rules (CBC)** |
+| **ZK-AML (this work)** | **8.80** | **2.19** | **672** | **NO** | **PMLA-class rules (CBC)** |
 
 Hardware note: ZK-AML on Apple M1 Pro (ARM64). Platypus on Intel i7-7700 (x86-64).
+ZK-AML prove speedup: **12.5× vs Platypus**; **9,884× vs Zerocash**.
 Hardware-independent claims: no trusted setup, AML in ZK, proof sizes, batch speedup ratios.
 
 TPS: Config A ~54.8, Config A2 ~64.8, Config A2+batch ~69.1.

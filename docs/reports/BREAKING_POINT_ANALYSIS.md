@@ -1,6 +1,13 @@
 # BREAKING POINT ANALYSIS - COMPLETE NIGHTMARE TEST
 **IDX Crypto Banking Framework**
 
+> ⚠️ **HISTORICAL REPORT — SHA-256 SIMULATION ERA (January 2026)**
+> All TPS numbers in this report (2,900–4,100 TPS) were measured against the old
+> SHA-256 simulation of cryptography, which is now deprecated (see `core/crypto/legacy/`).
+> **Do not cite these numbers in any publication.**
+> For real EC breaking point results, see `tests/benchmarks/results/master_20260302_203927.json`
+> (GIL ceiling ~4 proofs/sec; no process-level breaking point at load 50).
+
 **Date**: January 9, 2026
 **Test Duration**: ~4 minutes of wall time (OBLIVION test was terminated after 62 minutes as pathological case)
 **Total Transactions Verified**: **1,098,850 successful transactions**

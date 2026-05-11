@@ -148,9 +148,9 @@ Response:
 }
 ```
 
-**Performance**:
+**Performance** (real EC crypto, master run 2026-03-02):
 - Latency: <50ms average
-- Throughput: 2,900-4,100 TPS (verified)
+- Throughput: 54.8–69.1 TPS (Config A / A2 / A2+batch, Apple Silicon)
 - Fee: 0.01% of transaction amount
 - Finality: <1 second
 
@@ -791,14 +791,14 @@ To verify TX47 is in batch:
 **Performance**:
 - Block time: 10 seconds
 - Finality: <1 second after block creation
-- Throughput: 2,900-4,100 TPS (verified) (with batching)
+- Throughput: 54.8–69.1 TPS (real EC crypto, Config A/A2/A2+batch, master run 2026-03-02)
 - Energy: Very low (only selected miners)
 
 ---
 
-### 20. 12-Bank Consortium
+### 20. N-Bank Consortium
 
-**Description**: Permissioned network of 12 trusted banks.
+**Description**: Permissioned network of N trusted banks (configurable; default N=12).
 
 **Consortium Members**:
 
@@ -1291,15 +1291,14 @@ AXIS Bank suspects invalid transaction:
 5. Single consensus round for entire batch
 6. All 100 transactions finalized atomically
 
-**Performance** (verified through rigorous stress testing):
-- **Typical**: 3,000 TPS (median performance)
-- **Conservative**: 2,900 TPS (minimum across all loads)
-- **Peak**: 4,100 TPS (optimal conditions)
-- **Success rate**: 100% at all tested loads
-- **Primary bottleneck**: Cryptographic operations (expected for privacy-preserving systems)
+**Performance** (real EC crypto, master run 2026-03-02, Apple Silicon):
+- **Config A** (Python EC only): 54.8 TPS
+- **Config A2** (Python + Rust Bulletproofs): 64.8 TPS
+- **Config A2+batch** (native bp_verify_batch): 69.1 TPS
+- **Primary bottleneck**: Cryptographic operations — Bulletproofs prove 8.75ms, velocity ZK 237ms
 
 **Benefits**:
-- **Throughput**: 2,900-4,100 TPS verified capacity
+- **Throughput**: 54.8–69.1 TPS measured (real EC pipeline)
 - **Efficiency**: Single consensus round per batch (not per transaction)
 - **Atomicity**: All succeed or all fail
 - **Fair**: No transaction prioritization
@@ -1323,16 +1322,14 @@ AXIS Bank suspects invalid transaction:
 - Results merged and committed
 - No interference between pipelines
 
-**Performance** (verified through rigorous stress testing):
-- **Verified throughput**: 2,900-4,100 TPS
-- **Typical performance**: 3,000 TPS (median)
-- **Success rate**: 100% at all tested loads (up to 20,000 concurrent transactions)
-- **Bottleneck**: Cryptographic operations (range proof generation/verification)
+**Performance** (real EC crypto, master run 2026-03-02):
+- **Measured throughput**: 54.8–69.1 TPS (Config A / A2 / A2+batch)
+- **Bottleneck**: Cryptographic operations (Bulletproofs 8.75ms prove; velocity ZK 237ms suspicious branch)
 
 **Benefits**:
 - **Scalability**: System demonstrates linear scaling
 - **Stability**: No breaking point found at maximum tested load
-- **Throughput**: 2,900-4,100 TPS sustained
+- **Throughput**: 54.8–69.1 TPS sustained (real EC, Config A/A2/A2+batch)
 - **Latency**: <50ms average
 
 ---
@@ -1972,15 +1969,13 @@ What's REVEALED:
 **Benefits**:
 - **Privacy-Preserving**: Sensitive data never exposed
 - **Cryptographically Secure**: 128-bit security level
-- **Fast**: 0.01ms average proof generation
-- **High Throughput**: 64,004 proofs/sec (16.8x target!)
+- **Fast**: 11.28ms prove / 9.05ms verify (real Schnorr secp256k1, ~110/sec)
 - **Verifiable**: Anyone can verify, no one can forge
 
-**Performance**:
-- Proof generation: 0.01ms avg
-- Proof verification: <1ms
-- Proof size: ~2 KB
-- Throughput: 64,004/sec
+**Performance** (real Schnorr sigma protocol, master run 2026-03-02):
+- Proof generation: 11.28ms avg (~89 proofs/sec)
+- Proof verification: 9.05ms avg (~110 proofs/sec)
+- Soundness: 2^{-256} (Fiat-Shamir transform)
 
 **Use Cases**:
 - Government monitoring (see flag, not details)
@@ -2038,10 +2033,10 @@ What's REVEALED:
 - ✅ Company + Court + FIU: Can decrypt
 - **Collusion Resistance**: Prevents 2-party abuse
 
-**Performance**:
-- Encryption: 0.05ms avg
-- Decryption: 0.05ms avg
-- Throughput: 17,998 operations/sec
+**Performance** (AES-256-GCM + Shamir, master run 2026-03-02):
+- Encryption: 0.04ms avg (AES-256-GCM, 1KB)
+- Decryption: 0.04ms avg (with authentication tag)
+- Share split/reconstruct: <1ms (Lagrange, 256-bit prime)
 
 **Benefits**:
 - **Multi-Party Authorization**: Prevents unilateral access
@@ -2179,9 +2174,9 @@ February 2: Investigation #3 (new month)
 
 **Performance Impact**:
 - Detection overhead: 2-5ms per transaction
-- Does NOT impact: 2,900-4,100 TPS throughput (verified)
-- ZKP generation: 64,004/sec (far exceeds TPS)
-- Overall: < 0.2% performance impact
+- Does NOT block transaction: anomaly engine runs non-blocking (393–634ms end-to-end, separate path)
+- ZKP generation: ~89 proofs/sec (real Schnorr secp256k1, 11.28ms prove)
+- System TPS unaffected: 54.8–69.1 TPS measured (Config A/A2/A2+batch)
 
 ---
 
@@ -2202,7 +2197,7 @@ February 2: Investigation #3 (new month)
 ✅ Comprehensive audit trails
 
 ### Performance Features
-✅ 2,900-4,100 TPS throughput (verified)
+✅ 54.8–69.1 TPS throughput (real EC crypto, Config A/A2/A2+batch, master run 2026-03-02)
 ✅ <50ms average latency
 ✅ 99.997% proof size reduction
 ✅ Instant finality (<1 second)
@@ -2229,7 +2224,7 @@ February 2: Investigation #3 (new month)
 
 ### Anomaly Detection & Compliance Features ✅ NEW
 ✅ Rule-based anomaly detection (PMLA compliant, multi-factor scoring)
-✅ Zero-knowledge anomaly proofs (64,004/sec throughput)
+✅ Zero-knowledge anomaly proofs (real Schnorr secp256k1: ~89 prove/sec, ~110 verify/sec)
 ✅ Threshold-encrypted investigations (nested threshold: Company + 1-of-4 regulatory)
 ✅ Automatic account freeze (24h/72h durations)
 ✅ Court order integration workflow

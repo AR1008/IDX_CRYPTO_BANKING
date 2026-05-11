@@ -73,7 +73,7 @@ from core.crypto.real.pedersen import commit as pedersen_commit, serialize_point
 # [DOC] verify_range_proof: re-checks every bit commitment's Schnorr equation and the sum equality.
 from core.crypto.real.simple_range_proof import create_range_proof, verify_range_proof
 
-# [DOC] MAX_AMOUNT: safe upper bound on any single transaction amount (₹1 crore in whole rupees).
+# [DOC] MAX_AMOUNT: safe upper bound on any single transaction amount (₹1,00,000 in paise = 10,000,000p).
 # [DOC] Used to set the upper bound for the ABOVE branch range proof (amount ≥ high).
 MAX_AMOUNT: int = 10_000_000  # ₹1 crore
 

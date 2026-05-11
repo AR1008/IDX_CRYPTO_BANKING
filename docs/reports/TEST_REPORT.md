@@ -1,6 +1,12 @@
 # Comprehensive Test Report
 **IDX Crypto Banking System**
 
+> ⚠️ **HISTORICAL REPORT — SHA-256 SIMULATION ERA (January 2026)**
+> All TPS, ZKP, and throughput numbers in this report were measured against the old
+> SHA-256 simulation of cryptography, which is now deprecated (see `core/crypto/legacy/`).
+> **Do not cite these numbers in any publication.**
+> For real EC benchmark results, see `tests/benchmarks/results/master_20260302_203927.json`.
+
 **Date**: January 9, 2026
 **Version**: v3.0 (Post-Security-Fixes)
 **Test Environment**: Development (macOS Darwin 25.1.0, Python 3.12.4)

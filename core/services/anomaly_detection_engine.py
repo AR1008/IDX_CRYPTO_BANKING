@@ -42,7 +42,7 @@ from database.models.recipient import Recipient
 from core.crypto.real.velocity_zkp import prove_velocity
 # [DOC] prove_structuring: generates a ZK range proof classifying whether the transaction amount falls in
 # [DOC] the suspicious structuring range [low, high), revealing only is_structuring (bool) — never the exact amount.
-from core.crypto.real.structuring_zkp import prove_structuring
+from core.crypto.real.structuring_zkp import prove_structuring, MAX_AMOUNT as STRUCTURING_MAX_AMOUNT
 
 
 class AnomalyDetectionEngine:
@@ -357,16 +357,24 @@ class AnomalyDetectionEngine:
         high_int = int(self.STRUCTURING_THRESHOLD)
         amount_int = int(tx.amount)
 
-        # [DOC] Generate the structuring ZK proof regardless of whether the pattern fires.
-        # [DOC] This proves the amount classification (BELOW / STRUCTURING / ABOVE) without revealing the amount.
-        structuring_proofs.append(
-            prove_structuring(
-                amount=amount_int,
-                low=low_int,
-                high=high_int,
-                tx_hash=tx.transaction_hash,
+        # [DOC] Generate the structuring ZK proof unless amount exceeds MAX_AMOUNT.
+        # [DOC] Amounts >= MAX_AMOUNT are already unambiguously ABOVE the structuring threshold —
+        # [DOC] no ZKP is needed; append a lightweight sentinel so the proof list is never empty.
+        if amount_int >= STRUCTURING_MAX_AMOUNT:
+            structuring_proofs.append({
+                "branch": "ABOVE_MAX",
+                "is_structuring": False,
+                "note": f"amount {amount_int} >= MAX_AMOUNT {STRUCTURING_MAX_AMOUNT}; ZKP skipped — clearly non-structuring",
+            })
+        else:
+            structuring_proofs.append(
+                prove_structuring(
+                    amount=amount_int,
+                    low=low_int,
+                    high=high_int,
+                    tx_hash=tx.transaction_hash,
+                )
             )
-        )
 
         # [DOC] Check: is this transaction's amount in the suspicious "just below threshold" range?
         if threshold_amount <= tx.amount < self.STRUCTURING_THRESHOLD:

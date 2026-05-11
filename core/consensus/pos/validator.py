@@ -251,13 +251,13 @@ class BankValidator:
 
     def _validate_domestic(self, transactions: List[Transaction], public_block_hash: str, accounts_dict: dict) -> Tuple[bool, List[Transaction]]:
         """
-        Validate domestic transactions with 12-bank consortium consensus
+        Validate domestic transactions with N-bank consortium consensus (T = N-X, X < N/3).
 
         Flow:
-        1. Get all 12 consortium banks
+        1. Get all N active consortium banks
         2. Each bank validates all transactions
-        3. Need 8/12 approval (Byzantine fault tolerance)
-        4. Distribute bank fees equally (1% ÷ 12 per bank)
+        3. Need T-of-N approval (Byzantine fault tolerance; default T=10, N=12)
+        4. Distribute bank fees equally (1% ÷ N per bank)
 
         Args:
             transactions: Domestic transactions to validate

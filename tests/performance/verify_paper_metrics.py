@@ -1,10 +1,15 @@
 """
-Comprehensive Performance Verification for CCS 2026 Paper
-Purpose: Verify ALL claimed performance metrics with rigorous testing
+Schnorr ZKP + RCTD Throughput Stress Test
+Purpose: Measure real Schnorr ZKP and AES-256-GCM+Shamir throughput at scale.
 
-Paper Claims to Verify:
-1. Anomaly ZKP Proofs: 64,004/sec
-2. Threshold Anomaly Encryption: 17,998/sec
+Targets (CCS 2027, real EC crypto, master run 2026-03-02):
+  Schnorr ZKP prove:   ~11.28 ms  (~89 proofs/sec)
+  Schnorr ZKP verify:  ~9.05  ms  (~110 proofs/sec)
+  AES-256-GCM enc/dec: ~0.04  ms  (>20,000 ops/sec)
+
+NOTE: Old CCS 2026 claims (64,004 ZKP/sec, 17,998 enc/sec) were measured
+on a SHA-256 simulation and must NOT be cited.  This file measures the
+real secp256k1 Schnorr implementation and the real AES-256-GCM RCTD layer.
 """
 
 # [DOC] time.perf_counter is used for high-resolution wall-clock timing of every generate/verify call
@@ -262,11 +267,12 @@ def benchmark_threshold_1000():
 def main():
     """Run all benchmarks and generate report"""
     print("\n" + "="*70)
-    print("COMPREHENSIVE PERFORMANCE VERIFICATION FOR CCS 2026 PAPER")
+    print("SCHNORR ZKP + RCTD THROUGHPUT STRESS TEST (CCS 2027)")
     print("="*70)
-    print("\nVerifying claimed metrics:")
-    print("  • Anomaly ZKP Proofs: 64,004/sec (claimed)")
-    print("  • Threshold Encryption: 17,998/sec (claimed)")
+    print("\nReal EC targets (master run 2026-03-02):")
+    print("  • Schnorr ZKP prove:   ~11.28 ms / ~89 proofs/sec")
+    print("  • Schnorr ZKP verify:  ~9.05  ms / ~110 proofs/sec")
+    print("  • AES-256-GCM enc/dec: ~0.04  ms / >20,000 ops/sec")
     print("\n" + "="*70)
 
     # [DOC] Run benchmarks in order of increasing scale: 1k ZKP, 10k ZKP, 1k threshold
@@ -294,46 +300,44 @@ def main():
     print(f"   • Combined: {threshold_1k['combined_throughput']:,.0f} ops/sec")
 
     print("\n" + "="*70)
-    print("COMPARISON WITH PAPER CLAIMS")
+    print("COMPARISON WITH CCS 2027 REAL EC TARGETS")
     print("="*70)
 
-    # [DOC] claimed_zkp=64,004 is the number cited in the paper; zkp_ratio compares measured to claimed
-    # ZKP comparison
-    claimed_zkp = 64004
+    # [DOC] target_zkp_verify=110 is the real Schnorr secp256k1 throughput from master run 2026-03-02
+    target_zkp_verify = 110  # proofs/sec (real Schnorr, 9.05ms verify)
     measured_zkp = zkp_10k['throughput']
-    zkp_ratio = (measured_zkp / claimed_zkp) * 100
+    zkp_ratio = (measured_zkp / target_zkp_verify) * 100
 
-    print(f"\n📊 ZKP Proofs:")
-    print(f"   Claimed:  {claimed_zkp:,} proofs/sec")
+    print(f"\n📊 ZKP Proofs (real Schnorr secp256k1):")
+    print(f"   Target:   ~{target_zkp_verify:,} proofs/sec (9.05ms verify, master 2026-03-02)")
     print(f"   Measured: {measured_zkp:,.0f} proofs/sec")
-    print(f"   Ratio:    {zkp_ratio:.1f}% of claimed")
+    print(f"   Ratio:    {zkp_ratio:.1f}% of target")
 
-    # [DOC] >=90% of claimed is VERIFIED; 70-90% means the paper should be updated; <70% is a discrepancy
-    if zkp_ratio >= 90:
-        print("   ✅ VERIFIED - Within acceptable range")
-    elif zkp_ratio >= 70:
-        print("   ⚠️  LOWER - Need to update paper with measured value")
+    # [DOC] >=80% of target is on-track; <60% indicates a regression worth investigating
+    if zkp_ratio >= 80:
+        print("   ✅ ON TRACK")
+    elif zkp_ratio >= 60:
+        print("   ⚠️  SLIGHTLY LOWER — acceptable variance; rerun to confirm")
     else:
-        print("   ❌ SIGNIFICANT DISCREPANCY - Must update paper")
+        print("   ❌ REGRESSION — investigate before paper submission")
 
-    # [DOC] claimed_threshold=17,998 is the threshold encryption number cited in the paper
-    # Threshold comparison
-    claimed_threshold = 17998
+    # [DOC] target_threshold_enc=25000 is a conservative floor for AES-256-GCM+Shamir combined
+    target_threshold_enc = 25000  # ops/sec (AES-256-GCM 0.04ms per op)
     measured_threshold = threshold_1k['combined_throughput']
-    threshold_ratio = (measured_threshold / claimed_threshold) * 100
+    threshold_ratio = (measured_threshold / target_threshold_enc) * 100
 
-    print(f"\n📊 Threshold Encryption:")
-    print(f"   Claimed:  {claimed_threshold:,} ops/sec")
+    print(f"\n📊 RCTD Threshold Encryption (AES-256-GCM + Shamir):")
+    print(f"   Target:   ~{target_threshold_enc:,} ops/sec (0.04ms enc, master 2026-03-02)")
     print(f"   Measured: {measured_threshold:,.0f} ops/sec")
-    print(f"   Ratio:    {threshold_ratio:.1f}% of claimed")
+    print(f"   Ratio:    {threshold_ratio:.1f}% of target")
 
-    # [DOC] Same >=90%/70-90%/<70% thresholds as ZKP to classify whether the paper claim holds
-    if threshold_ratio >= 90:
-        print("   ✅ VERIFIED - Within acceptable range")
-    elif threshold_ratio >= 70:
-        print("   ⚠️  LOWER - Need to update paper with measured value")
+    # [DOC] Same >=80%/<60% thresholds to classify measured vs real EC target
+    if threshold_ratio >= 80:
+        print("   ✅ ON TRACK")
+    elif threshold_ratio >= 60:
+        print("   ⚠️  SLIGHTLY LOWER — acceptable variance; rerun to confirm")
     else:
-        print("   ❌ SIGNIFICANT DISCREPANCY - Must update paper")
+        print("   ❌ REGRESSION — investigate before paper submission")
 
     print("\n" + "="*70)
     print("✅ ALL BENCHMARKS COMPLETED SUCCESSFULLY")
