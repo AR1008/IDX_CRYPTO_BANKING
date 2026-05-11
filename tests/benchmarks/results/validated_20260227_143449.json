@@ -1,0 +1,243 @@
+{
+  "hardware": {
+    "model": "Apple M1 Pro (MacBookPro18,3)",
+    "cores": "8 performance + 2 efficiency",
+    "ram_gb": 16,
+    "os": "macOS 26.3",
+    "python": "3.10.19"
+  },
+  "timestamp": "2026-02-27T14:34:18.660680",
+  "platypus_ref": {
+    "hardware": "Intel Core i7-7700 @ 3.60 GHz, 4 cores, 16 GB",
+    "proof_gen_ms": 110,
+    "verify_ms": 0.89,
+    "proof_size_bytes": 418,
+    "tps_server": 922,
+    "trusted_setup": true,
+    "aml_in_zk": "Balance limits only (holding + receiving)"
+  },
+  "zerocash_ref": {
+    "hardware": "Intel Core i7 (2014)",
+    "proof_gen_ms": 87000,
+    "verify_ms": 6,
+    "proof_size_bytes": 288,
+    "trusted_setup": true,
+    "aml_in_zk": "None"
+  },
+  "bp_paper_ref": {
+    "hardware": "secp256k1, 2018 hardware",
+    "proof_gen_ms": 36,
+    "verify_ms": 11,
+    "proof_size_bytes": 674,
+    "batch_marginal_ms": 0.25,
+    "trusted_setup": false
+  },
+  "bulletproofs": {
+    "prove_64bit": {
+      "mean_ms": 8.763,
+      "median_ms": 8.749,
+      "stdev_ms": 0.084,
+      "p95_ms": 8.94,
+      "p99_ms": 8.972,
+      "min_ms": 8.637,
+      "max_ms": 8.972,
+      "n_trials": 100
+    },
+    "verify_64bit": {
+      "mean_ms": 2.107,
+      "median_ms": 2.082,
+      "stdev_ms": 0.057,
+      "p95_ms": 2.241,
+      "p99_ms": 2.361,
+      "min_ms": 2.063,
+      "max_ms": 2.361,
+      "n_trials": 100
+    },
+    "proof_sizes": {
+      "8bit": 480,
+      "16bit": 544,
+      "32bit": 608,
+      "64bit": 672
+    },
+    "batch": {
+      "B1": {
+        "sequential_ms": 2.5,
+        "native_ms": 2.14,
+        "parallel_ms": 2.27,
+        "native_speedup": 1.17,
+        "parallel_speedup": 1.1,
+        "per_proof_native_ms": 2.138,
+        "all_valid": true,
+        "speedup_x": 1.17,
+        "per_proof_ms": 2.138,
+        "parallel_ms_legacy": 2.27
+      },
+      "B10": {
+        "sequential_ms": 21.28,
+        "native_ms": 12.27,
+        "parallel_ms": 4.73,
+        "native_speedup": 1.73,
+        "parallel_speedup": 4.5,
+        "per_proof_native_ms": 1.227,
+        "all_valid": true,
+        "speedup_x": 1.73,
+        "per_proof_ms": 1.227,
+        "parallel_ms_legacy": 4.73
+      },
+      "B25": {
+        "sequential_ms": 52.84,
+        "native_ms": 29.21,
+        "parallel_ms": 9.39,
+        "native_speedup": 1.81,
+        "parallel_speedup": 5.63,
+        "per_proof_native_ms": 1.168,
+        "all_valid": true,
+        "speedup_x": 1.81,
+        "per_proof_ms": 1.168,
+        "parallel_ms_legacy": 9.39
+      },
+      "B50": {
+        "sequential_ms": 105.74,
+        "native_ms": 57.25,
+        "parallel_ms": 18.0,
+        "native_speedup": 1.85,
+        "parallel_speedup": 5.88,
+        "per_proof_native_ms": 1.145,
+        "all_valid": true,
+        "speedup_x": 1.85,
+        "per_proof_ms": 1.145,
+        "parallel_ms_legacy": 18.0
+      },
+      "B100": {
+        "sequential_ms": 210.78,
+        "native_ms": 112.25,
+        "parallel_ms": 35.48,
+        "native_speedup": 1.88,
+        "parallel_speedup": 5.94,
+        "per_proof_native_ms": 1.123,
+        "all_valid": true,
+        "speedup_x": 1.88,
+        "per_proof_ms": 1.123,
+        "parallel_ms_legacy": 35.48
+      }
+    }
+  },
+  "pedersen": {
+    "commit": {
+      "mean_ms": 4.588,
+      "median_ms": 4.575,
+      "stdev_ms": 0.084,
+      "p95_ms": 4.754,
+      "p99_ms": 4.885,
+      "min_ms": 4.398,
+      "max_ms": 4.885,
+      "n_trials": 100
+    },
+    "verify_opening": {
+      "mean_ms": 4.503,
+      "median_ms": 4.488,
+      "stdev_ms": 0.042,
+      "p95_ms": 4.563,
+      "p99_ms": 4.73,
+      "min_ms": 4.467,
+      "max_ms": 4.73,
+      "n_trials": 100
+    },
+    "commitment_size_compressed_bytes": 33,
+    "commitment_size_uncompressed_bytes": 65
+  },
+  "schnorr_zkp": {
+    "prove": {
+      "mean_ms": 11.115,
+      "median_ms": 11.067,
+      "stdev_ms": 0.238,
+      "p95_ms": 11.62,
+      "p99_ms": 12.164,
+      "min_ms": 10.699,
+      "max_ms": 12.164,
+      "n_trials": 100
+    },
+    "verify": {
+      "mean_ms": 8.838,
+      "median_ms": 8.809,
+      "stdev_ms": 0.09,
+      "p95_ms": 9.019,
+      "p99_ms": 9.147,
+      "min_ms": 8.737,
+      "max_ms": 9.147,
+      "n_trials": 100
+    },
+    "verify_tps": 113.1
+  },
+  "bbs_group_sig": {
+    "sign": {
+      "mean_ms": 92.624,
+      "median_ms": 92.563,
+      "stdev_ms": 0.594,
+      "p95_ms": 93.793,
+      "p99_ms": 96.41,
+      "min_ms": 91.784,
+      "max_ms": 96.41,
+      "n_trials": 100
+    },
+    "verify": {
+      "mean_ms": 142.699,
+      "median_ms": 142.402,
+      "stdev_ms": 1.006,
+      "p95_ms": 145.432,
+      "p99_ms": 148.251,
+      "min_ms": 141.51,
+      "max_ms": 148.251,
+      "n_trials": 100
+    },
+    "open": {
+      "mean_ms": 1.665,
+      "median_ms": 1.647,
+      "stdev_ms": 0.051,
+      "p95_ms": 1.807,
+      "p99_ms": 1.844,
+      "min_ms": 1.623,
+      "max_ms": 1.844,
+      "n_trials": 100
+    },
+    "sig_size_bytes": 939,
+    "available": true
+  },
+  "consensus": {
+    "Small consortium": {
+      "N": 4,
+      "X": 1,
+      "T": 3,
+      "threshold_pct": 75.0,
+      "bft_safe": true
+    },
+    "Indian consortium (default)": {
+      "N": 12,
+      "X": 2,
+      "T": 10,
+      "threshold_pct": 83.3,
+      "bft_safe": true
+    },
+    "Indian consortium (max BFT tolerance)": {
+      "N": 12,
+      "X": 3,
+      "T": 9,
+      "threshold_pct": 75.0,
+      "bft_safe": true
+    },
+    "Large network (BFT limit)": {
+      "N": 50,
+      "X": 16,
+      "T": 34,
+      "threshold_pct": 68.0,
+      "bft_safe": true
+    }
+  },
+  "tps_estimate": {
+    "config_a_tps": 55.51,
+    "config_a2_tps": 64.69,
+    "config_a2b_tps": 69.09,
+    "prove_speedup_vs_platypus": 12.6,
+    "prove_speedup_vs_zerocash": 9928.0
+  }
+}

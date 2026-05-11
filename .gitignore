@@ -1,0 +1,47 @@
+# === SECRETS — never commit ===
+keys.json
+
+# === Python virtual environment ===
+venv310/
+venv/
+.venv/
+env/
+
+# === Python bytecode ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# === Runtime artifacts ===
+server.log
+logs/
+*.log
+
+# === Database dumps / local data ===
+data/backups/
+*.sql.gz
+*.dump
+
+# === macOS metadata ===
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# === Editor / IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# === pytest / coverage ===
+.pytest_cache/
+.coverage
+htmlcov/
+
+# === Build artifacts ===
+*.egg-info/
+dist/
+build/

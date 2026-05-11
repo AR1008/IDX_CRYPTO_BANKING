@@ -1,0 +1,51 @@
+# Web Framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+Flask-SocketIO==5.3.5
+python-socketio==5.10.0
+
+# Database
+SQLAlchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.12.1
+
+# Cryptography
+pycryptodome==3.19.0
+
+# Real Elliptic Curve Cryptography (for core/crypto/real/ — real Pedersen/Schnorr)
+# Required for honest academic implementation replacing SHA-256 simulations.
+# Provides secp256k1 point arithmetic (multiply, add) used in:
+#   core/crypto/real/pedersen.py       - Real Pedersen commitments
+#   core/crypto/real/schnorr.py        - Real Schnorr ZK proofs
+#   core/crypto/real/simple_range_proof.py - Real (but O(n)) range proofs
+py_ecc>=6.0.0
+
+# BBS+ Group Signatures + CP-ABE (for core/crypto/real/bbs_group_signature.py)
+# Pairing-based crypto on BN254 (128-bit security).  Provides:
+#   core/crypto/real/bbs_group_signature.py - Real BBS04 group signatures
+# PREREQUISITE (macOS): brew install pbc
+# PREREQUISITE (Ubuntu/Debian): sudo apt-get install libpbc-dev
+# MUST install from source (PyPI package has broken metadata):
+#   git clone https://github.com/JHUISI/charm
+#   cd charm && LDFLAGS="-L/opt/homebrew/lib" CFLAGS="-I/opt/homebrew/include" pip install .
+# Installed package name: charm-crypto-framework==0.62
+# charm-crypto   <-- intentionally omitted: PyPI version (0.43) has broken metadata (reports 0.0.0)
+
+# Background Tasks
+celery==5.3.4
+redis==5.0.1
+
+# JWT Authentication
+PyJWT[crypto]==2.8.0
+passlib==1.7.4
+
+# Rate Limiting
+Flask-Limiter==3.5.0
+
+# Testing
+pytest==7.4.3
+faker==20.1.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0

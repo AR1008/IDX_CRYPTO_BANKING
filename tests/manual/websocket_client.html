@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDX Banking - WebSocket Test</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { color: #4CAF50; }
+        .status { padding: 15px; margin: 15px 0; border-radius: 8px; font-size: 16px; font-weight: bold; }
+        .connected { background: #2d5016; border: 2px solid #4CAF50; }
+        .disconnected { background: #501616; border: 2px solid #f44336; }
+        .event { padding: 12px; margin: 8px 0; background: #2a2a2a; border-left: 5px solid #4CAF50; border-radius: 4px; }
+        .event.block { border-left-color: #2196F3; }
+        .event.consensus { border-left-color: #FF9800; }
+        .event.tx { border-left-color: #4CAF50; }
+        .event strong { color: #4CAF50; font-size: 16px; }
+        .event pre { background: #1a1a1a; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .event small { color: #888; }
+        input { padding: 12px; margin: 5px; font-size: 14px; border: 2px solid #555; background: #2a2a2a; color: #fff; border-radius: 4px; }
+        button { padding: 12px 20px; margin: 5px; font-size: 14px; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        button.connect { background: #4CAF50; color: white; }
+        button.connect:hover { background: #45a049; }
+        button.disconnect { background: #f44336; color: white; }
+        button.disconnect:hover { background: #da190b; }
+        button.clear { background: #FF9800; color: white; }
+        button.clear:hover { background: #e68900; }
+        #events { max-height: 500px; overflow-y: auto; margin-top: 20px; }
+        .count { background: #333; padding: 10px 15px; border-radius: 6px; display: inline-block; margin: 15px 0; font-size: 18px; }
+        .count strong { color: #4CAF50; }
+        .controls { margin: 20px 0; }
+    </style>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>IDX Banking - Real-Time Updates</h1>
+        
+        <div id="status" class="status disconnected">
+            Not Connected
+        </div>
+        
+        <div class="count">
+            Events Received: <strong id="eventCount">0</strong>
+        </div>
+        
+        <div class="controls">
+            <input type="text" id="token" placeholder="Paste your JWT token here" style="width: 500px;">
+            <br>
+            <button class="connect" onclick="connect()">Connect</button>
+            <button class="disconnect" onclick="disconnect()">Disconnect</button>
+            <button class="clear" onclick="clearEvents()">Clear Events</button>
+        </div>
+        
+        <h2>Live Events</h2>
+        <div id="events"></div>
+    </div>
+
+    <script>
+        let socket = null;
+        let eventCount = 0;
+
+        function connect() {
+            const token = document.getElementById('token').value;
+            
+            if (!token) {
+                alert('Please enter JWT token');
+                return;
+            }
+
+            if (socket) {
+                socket.disconnect();
+            }
+
+            console.log('Connecting...');
+
+            socket = io('http://localhost:5000', {
+                auth: { token: token },
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                console.log('Connected!');
+                updateStatus('Connected to IDX Banking', true);
+            });
+
+            socket.on('connected', (data) => {
+                console.log('Connection confirmed:', data);
+                addEvent('Connection Confirmed', data, 'tx');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected');
+                updateStatus('Disconnected', false);
+            });
+
+            socket.on('tx_complete', (data) => {
+                console.log('TX complete:', data);
+                addEvent('Transaction Completed', data, 'tx');
+            });
+
+            socket.on('block_mined', (data) => {
+                console.log('Block mined:', data);
+                addEvent('Block Mined', data, 'block');
+            });
+
+            socket.on('consensus', (data) => {
+                console.log('Consensus:', data);
+                addEvent('Consensus Achieved', data, 'consensus');
+            });
+
+            socket.on('test_event', (data) => {
+                console.log('Test event:', data);
+                addEvent('Test Event', data, 'tx');
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error('Error:', error);
+                updateStatus('Connection Failed: ' + error.message, false);
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        }
+
+        function clearEvents() {
+            document.getElementById('events').innerHTML = '';
+            eventCount = 0;
+            document.getElementById('eventCount').textContent = eventCount;
+        }
+
+        function updateStatus(message, connected) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + (connected ? 'connected' : 'disconnected');
+        }
+
+        function addEvent(title, data, type) {
+            eventCount++;
+            document.getElementById('eventCount').textContent = eventCount;
+            
+            const events = document.getElementById('events');
+            const event = document.createElement('div');
+            event.className = 'event ' + type;
+            event.innerHTML = `
+                <strong>${title} (#${eventCount})</strong><br>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+                <small>${new Date().toLocaleTimeString()}</small>
+            `;
+            events.insertBefore(event, events.firstChild);
+        }
+    </script>
+</body>
+</html>

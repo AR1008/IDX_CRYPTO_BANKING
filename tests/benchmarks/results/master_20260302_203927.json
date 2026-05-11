@@ -1,0 +1,664 @@
+{
+  "run_id": "master_20260302_202733",
+  "hardware": {
+    "model": "arm64",
+    "processor": "arm",
+    "cpu_count": 10,
+    "os": "Darwin 25.3.0",
+    "python": "3.10.19"
+  },
+  "timestamp": "2026-03-02T20:27:33.259745",
+  "n_trials": 100,
+  "n_warmup": 5,
+  "n_trials_engine": 20,
+  "platypus_ref": {
+    "hardware": "Intel Core i7-7700 @ 3.60 GHz, 4 cores, 16 GB",
+    "proof_gen_ms": 110,
+    "verify_ms": 0.89,
+    "proof_size_bytes": 418,
+    "tps_server": 922,
+    "trusted_setup": true,
+    "aml_in_zk": "Balance limits only"
+  },
+  "zerocash_ref": {
+    "hardware": "Intel Core i7 (2014)",
+    "proof_gen_ms": 87000,
+    "verify_ms": 6,
+    "proof_size_bytes": 288,
+    "trusted_setup": true,
+    "aml_in_zk": "None"
+  },
+  "bp_paper_ref": {
+    "hardware": "secp256k1, 2018 hardware",
+    "proof_gen_ms": 36,
+    "verify_ms": 11,
+    "proof_size_bytes": 674,
+    "batch_marginal_ms": 0.25,
+    "trusted_setup": false
+  },
+  "bulletproofs": {
+    "prove_64bit": {
+      "mean_ms": 8.752,
+      "median_ms": 8.704,
+      "stdev_ms": 0.12,
+      "p95_ms": 9.01,
+      "p99_ms": 9.29,
+      "min_ms": 8.635,
+      "max_ms": 9.29,
+      "n_trials": 100
+    },
+    "verify_64bit": {
+      "mean_ms": 2.093,
+      "median_ms": 2.077,
+      "stdev_ms": 0.042,
+      "p95_ms": 2.204,
+      "p99_ms": 2.276,
+      "min_ms": 2.064,
+      "max_ms": 2.276,
+      "n_trials": 100
+    },
+    "proof_sizes": {
+      "8bit": 480,
+      "16bit": 544,
+      "32bit": 608,
+      "64bit": 672
+    },
+    "batch": {
+      "B1": {
+        "sequential_ms": 2.7,
+        "native_ms": 2.14,
+        "parallel_ms": 2.33,
+        "native_speedup": 1.26,
+        "parallel_speedup": 1.16,
+        "per_proof_native_ms": 2.144,
+        "all_valid": true,
+        "speedup_x": 1.26,
+        "per_proof_ms": 2.144
+      },
+      "B10": {
+        "sequential_ms": 20.89,
+        "native_ms": 12.17,
+        "parallel_ms": 4.78,
+        "native_speedup": 1.72,
+        "parallel_speedup": 4.37,
+        "per_proof_native_ms": 1.217,
+        "all_valid": true,
+        "speedup_x": 1.72,
+        "per_proof_ms": 1.217
+      },
+      "B25": {
+        "sequential_ms": 53.05,
+        "native_ms": 29.26,
+        "parallel_ms": 9.22,
+        "native_speedup": 1.81,
+        "parallel_speedup": 5.76,
+        "per_proof_native_ms": 1.17,
+        "all_valid": true,
+        "speedup_x": 1.81,
+        "per_proof_ms": 1.17
+      },
+      "B50": {
+        "sequential_ms": 106.08,
+        "native_ms": 56.83,
+        "parallel_ms": 18.02,
+        "native_speedup": 1.87,
+        "parallel_speedup": 5.89,
+        "per_proof_native_ms": 1.137,
+        "all_valid": true,
+        "speedup_x": 1.87,
+        "per_proof_ms": 1.137
+      },
+      "B100": {
+        "sequential_ms": 210.23,
+        "native_ms": 112.46,
+        "parallel_ms": 35.53,
+        "native_speedup": 1.87,
+        "parallel_speedup": 5.92,
+        "per_proof_native_ms": 1.125,
+        "all_valid": true,
+        "speedup_x": 1.87,
+        "per_proof_ms": 1.125
+      }
+    }
+  },
+  "pedersen": {
+    "commit": {
+      "mean_ms": 4.596,
+      "median_ms": 4.584,
+      "stdev_ms": 0.087,
+      "p95_ms": 4.767,
+      "p99_ms": 4.883,
+      "min_ms": 4.444,
+      "max_ms": 4.883,
+      "n_trials": 100
+    },
+    "verify_opening": {
+      "mean_ms": 4.537,
+      "median_ms": 4.518,
+      "stdev_ms": 0.053,
+      "p95_ms": 4.638,
+      "p99_ms": 4.877,
+      "min_ms": 4.499,
+      "max_ms": 4.877,
+      "n_trials": 100
+    },
+    "commitment_size_compressed_bytes": 33,
+    "commitment_size_uncompressed_bytes": 65
+  },
+  "schnorr_zkp": {
+    "prove": {
+      "mean_ms": 11.278,
+      "median_ms": 11.283,
+      "stdev_ms": 0.176,
+      "p95_ms": 11.57,
+      "p99_ms": 11.8,
+      "min_ms": 10.93,
+      "max_ms": 11.8,
+      "n_trials": 100
+    },
+    "verify": {
+      "mean_ms": 9.051,
+      "median_ms": 9.014,
+      "stdev_ms": 0.156,
+      "p95_ms": 9.363,
+      "p99_ms": 9.572,
+      "min_ms": 8.789,
+      "max_ms": 9.572,
+      "n_trials": 100
+    },
+    "verify_tps": 110.5
+  },
+  "bbs_group_sig": {
+    "sign": {
+      "mean_ms": 92.308,
+      "median_ms": 92.257,
+      "stdev_ms": 0.683,
+      "p95_ms": 93.506,
+      "p99_ms": 94.113,
+      "min_ms": 91.123,
+      "max_ms": 94.113,
+      "n_trials": 100
+    },
+    "verify": {
+      "mean_ms": 141.291,
+      "median_ms": 141.111,
+      "stdev_ms": 0.735,
+      "p95_ms": 142.064,
+      "p99_ms": 146.349,
+      "min_ms": 140.426,
+      "max_ms": 146.349,
+      "n_trials": 100
+    },
+    "open": {
+      "mean_ms": 1.662,
+      "median_ms": 1.647,
+      "stdev_ms": 0.036,
+      "p95_ms": 1.737,
+      "p99_ms": 1.835,
+      "min_ms": 1.628,
+      "max_ms": 1.835,
+      "n_trials": 100
+    },
+    "sig_size_bytes": 939,
+    "available": true
+  },
+  "simple_range_proof": {
+    "8bit": {
+      "prove": {
+        "mean_ms": 152.288,
+        "median_ms": 152.034,
+        "stdev_ms": 1.11,
+        "p95_ms": 153.931,
+        "p99_ms": 158.946,
+        "min_ms": 150.768,
+        "max_ms": 158.946,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 135.679,
+        "median_ms": 135.478,
+        "stdev_ms": 0.722,
+        "p95_ms": 136.822,
+        "p99_ms": 140.445,
+        "min_ms": 134.81,
+        "max_ms": 140.445,
+        "n_trials": 100
+      },
+      "note": "baseline"
+    },
+    "14bit": {
+      "prove": {
+        "mean_ms": 232.877,
+        "median_ms": 232.277,
+        "stdev_ms": 3.351,
+        "p95_ms": 235.761,
+        "p99_ms": 262.985,
+        "min_ms": 230.557,
+        "max_ms": 262.985,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 204.721,
+        "median_ms": 204.263,
+        "stdev_ms": 1.43,
+        "p95_ms": 208.651,
+        "p99_ms": 211.701,
+        "min_ms": 203.155,
+        "max_ms": 211.701,
+        "n_trials": 100
+      },
+      "note": "velocity suspicious branch"
+    },
+    "16bit": {
+      "prove": {
+        "mean_ms": 264.635,
+        "median_ms": 264.317,
+        "stdev_ms": 1.416,
+        "p95_ms": 266.691,
+        "p99_ms": 272.11,
+        "min_ms": 262.429,
+        "max_ms": 272.11,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 232.782,
+        "median_ms": 232.368,
+        "stdev_ms": 1.279,
+        "p95_ms": 234.995,
+        "p99_ms": 239.401,
+        "min_ms": 231.151,
+        "max_ms": 239.401,
+        "n_trials": 100
+      },
+      "note": "structuring STRUCTURING branch"
+    },
+    "20bit": {
+      "prove": {
+        "mean_ms": 328.769,
+        "median_ms": 328.097,
+        "stdev_ms": 3.385,
+        "p95_ms": 333.112,
+        "p99_ms": 356.74,
+        "min_ms": 326.358,
+        "max_ms": 356.74,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 288.088,
+        "median_ms": 287.538,
+        "stdev_ms": 1.646,
+        "p95_ms": 290.211,
+        "p99_ms": 296.449,
+        "min_ms": 286.64,
+        "max_ms": 296.449,
+        "n_trials": 100
+      },
+      "note": "structuring BELOW branch"
+    },
+    "24bit": {
+      "prove": {
+        "mean_ms": 392.173,
+        "median_ms": 392.018,
+        "stdev_ms": 1.993,
+        "p95_ms": 395.878,
+        "p99_ms": 400.883,
+        "min_ms": 389.186,
+        "max_ms": 400.883,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 344.275,
+        "median_ms": 343.246,
+        "stdev_ms": 3.951,
+        "p95_ms": 350.632,
+        "p99_ms": 377.78,
+        "min_ms": 341.867,
+        "max_ms": 377.78,
+        "n_trials": 100
+      },
+      "note": "structuring ABOVE branch"
+    }
+  },
+  "velocity_zkp": {
+    "not_suspicious_1h": {
+      "prove": {
+        "mean_ms": 60.996,
+        "median_ms": 60.914,
+        "stdev_ms": 0.443,
+        "p95_ms": 61.883,
+        "p99_ms": 63.127,
+        "min_ms": 60.228,
+        "max_ms": 63.127,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 52.551,
+        "median_ms": 52.48,
+        "stdev_ms": 0.459,
+        "p95_ms": 53.081,
+        "p99_ms": 54.907,
+        "min_ms": 52.099,
+        "max_ms": 54.907,
+        "n_trials": 100
+      },
+      "is_suspicious": false,
+      "note": "count=3 < T=5"
+    },
+    "suspicious_1h": {
+      "prove": {
+        "mean_ms": 237.077,
+        "median_ms": 236.62,
+        "stdev_ms": 1.824,
+        "p95_ms": 240.776,
+        "p99_ms": 245.911,
+        "min_ms": 234.871,
+        "max_ms": 245.911,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 205.083,
+        "median_ms": 204.743,
+        "stdev_ms": 1.322,
+        "p95_ms": 208.204,
+        "p99_ms": 212.406,
+        "min_ms": 203.653,
+        "max_ms": 212.406,
+        "n_trials": 100
+      },
+      "is_suspicious": true,
+      "note": "count=7 \u2265 T=5"
+    },
+    "not_suspicious_24h": {
+      "prove": {
+        "mean_ms": 77.028,
+        "median_ms": 76.879,
+        "stdev_ms": 0.767,
+        "p95_ms": 79.035,
+        "p99_ms": 80.093,
+        "min_ms": 75.877,
+        "max_ms": 80.093,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 66.61,
+        "median_ms": 66.511,
+        "stdev_ms": 0.516,
+        "p95_ms": 67.398,
+        "p99_ms": 69.428,
+        "min_ms": 66.041,
+        "max_ms": 69.428,
+        "n_trials": 100
+      },
+      "is_suspicious": false,
+      "note": "count=9 < T=10"
+    },
+    "suspicious_7d": {
+      "prove": {
+        "mean_ms": 236.889,
+        "median_ms": 236.649,
+        "stdev_ms": 1.347,
+        "p95_ms": 238.758,
+        "p99_ms": 244.158,
+        "min_ms": 235.053,
+        "max_ms": 244.158,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 205.253,
+        "median_ms": 204.893,
+        "stdev_ms": 1.272,
+        "p95_ms": 207.105,
+        "p99_ms": 213.119,
+        "min_ms": 203.783,
+        "max_ms": 213.119,
+        "n_trials": 100
+      },
+      "is_suspicious": true,
+      "note": "count=60 \u2265 T=50"
+    }
+  },
+  "structuring_zkp": {
+    "BELOW": {
+      "prove": {
+        "mean_ms": 332.934,
+        "median_ms": 332.617,
+        "stdev_ms": 1.667,
+        "p95_ms": 335.102,
+        "p99_ms": 341.194,
+        "min_ms": 330.58,
+        "max_ms": 341.194,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 288.203,
+        "median_ms": 287.364,
+        "stdev_ms": 3.687,
+        "p95_ms": 292.606,
+        "p99_ms": 320.983,
+        "min_ms": 285.99,
+        "max_ms": 320.983,
+        "n_trials": 100
+      },
+      "is_structuring": false,
+      "branch": "BELOW",
+      "note": "amount < \u20b99.5L"
+    },
+    "STRUCTURING": {
+      "prove": {
+        "mean_ms": 268.557,
+        "median_ms": 268.164,
+        "stdev_ms": 1.588,
+        "p95_ms": 270.514,
+        "p99_ms": 277.05,
+        "min_ms": 266.896,
+        "max_ms": 277.05,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 232.918,
+        "median_ms": 232.553,
+        "stdev_ms": 1.331,
+        "p95_ms": 235.563,
+        "p99_ms": 240.028,
+        "min_ms": 231.4,
+        "max_ms": 240.028,
+        "n_trials": 100
+      },
+      "is_structuring": true,
+      "branch": "STRUCTURING",
+      "note": "\u20b99.5L \u2264 amount < \u20b910L"
+    },
+    "ABOVE": {
+      "prove": {
+        "mean_ms": 398.053,
+        "median_ms": 397.274,
+        "stdev_ms": 3.073,
+        "p95_ms": 403.635,
+        "p99_ms": 421.189,
+        "min_ms": 395.164,
+        "max_ms": 421.189,
+        "n_trials": 100
+      },
+      "verify": {
+        "mean_ms": 346.065,
+        "median_ms": 343.789,
+        "stdev_ms": 7.108,
+        "p95_ms": 354.815,
+        "p99_ms": 386.282,
+        "min_ms": 342.515,
+        "max_ms": 386.282,
+        "n_trials": 100
+      },
+      "is_structuring": false,
+      "branch": "ABOVE",
+      "note": "amount \u2265 \u20b910L"
+    }
+  },
+  "anomaly_engine": {
+    "clean_tx": {
+      "mean_ms": 393.016,
+      "median_ms": 392.579,
+      "p95_ms": 399.435,
+      "stdev_ms": 1.865,
+      "n_trials": 20,
+      "velocity_proofs": 1,
+      "structuring_proofs": 1,
+      "flags": [],
+      "requires_investigation": false,
+      "score": 0.0,
+      "note": "\u20b91,000 \u2014 no flags expected"
+    },
+    "high_value": {
+      "mean_ms": 457.559,
+      "median_ms": 456.726,
+      "p95_ms": 466.421,
+      "stdev_ms": 2.54,
+      "n_trials": 20,
+      "velocity_proofs": 1,
+      "structuring_proofs": 1,
+      "flags": [
+        "HIGH_VALUE_TIER_1",
+        "PMLA_MANDATORY_REPORTING"
+      ],
+      "requires_investigation": false,
+      "score": 25.0,
+      "note": "\u20b970,000 \u2014 HIGH_VALUE_TIER_1 expected"
+    },
+    "high_velocity": {
+      "mean_ms": 572.48,
+      "median_ms": 570.758,
+      "p95_ms": 585.2,
+      "stdev_ms": 4.004,
+      "n_trials": 20,
+      "velocity_proofs": 1,
+      "structuring_proofs": 1,
+      "flags": [
+        "HIGH_VELOCITY_1H_12"
+      ],
+      "requires_investigation": false,
+      "score": 30.0,
+      "note": "\u20b91,000 + 12 txns/24h \u2014 VELOCITY expected"
+    },
+    "full_flag": {
+      "mean_ms": 634.177,
+      "median_ms": 633.924,
+      "p95_ms": 641.549,
+      "stdev_ms": 2.389,
+      "n_trials": 20,
+      "velocity_proofs": 1,
+      "structuring_proofs": 1,
+      "flags": [
+        "HIGH_VALUE_TIER_1",
+        "PMLA_MANDATORY_REPORTING",
+        "HIGH_VELOCITY_1H_12"
+      ],
+      "requires_investigation": false,
+      "score": 55.0,
+      "note": "\u20b996,000 + velocity \u2014 HIGH_VALUE+VELOCITY+STRUCTURING"
+    }
+  },
+  "consensus": {
+    "Small consortium": {
+      "N": 4,
+      "X": 1,
+      "T": 3,
+      "threshold_pct": 75.0,
+      "bft_safe": true
+    },
+    "Indian consortium (default)": {
+      "N": 12,
+      "X": 2,
+      "T": 10,
+      "threshold_pct": 83.3,
+      "bft_safe": true
+    },
+    "Indian consortium (max BFT tolerance)": {
+      "N": 12,
+      "X": 3,
+      "T": 9,
+      "threshold_pct": 75.0,
+      "bft_safe": true
+    },
+    "Large network (BFT limit)": {
+      "N": 50,
+      "X": 16,
+      "T": 34,
+      "threshold_pct": 68.0,
+      "bft_safe": true
+    }
+  },
+  "tps_estimate": {
+    "config_a_tps": 54.82,
+    "config_a2_tps": 64.76,
+    "config_a2b_tps": 69.1,
+    "prove_speedup_vs_platypus": 12.6,
+    "prove_speedup_vs_zerocash": 9941.0
+  },
+  "breaking_points": {
+    "velocity_zkp_concurrent": [
+      {
+        "load": 1,
+        "wall_ms": 236.4,
+        "throughput_proofs_per_sec": 4.23,
+        "serial_single_ms": 243.7
+      },
+      {
+        "load": 5,
+        "wall_ms": 1191.6,
+        "throughput_proofs_per_sec": 4.2,
+        "serial_single_ms": 236.3
+      },
+      {
+        "load": 10,
+        "wall_ms": 2382.1,
+        "throughput_proofs_per_sec": 4.2,
+        "serial_single_ms": 235.8
+      },
+      {
+        "load": 25,
+        "wall_ms": 5984.0,
+        "throughput_proofs_per_sec": 4.18,
+        "serial_single_ms": 241.2
+      },
+      {
+        "load": 50,
+        "wall_ms": 12022.9,
+        "throughput_proofs_per_sec": 4.16,
+        "serial_single_ms": 236.1
+      }
+    ],
+    "structuring_zkp_concurrent": [
+      {
+        "load": 1,
+        "wall_ms": 268.8,
+        "throughput_proofs_per_sec": 3.72,
+        "serial_single_ms": 268.4
+      },
+      {
+        "load": 5,
+        "wall_ms": 1359.3,
+        "throughput_proofs_per_sec": 3.68,
+        "serial_single_ms": 267.6
+      },
+      {
+        "load": 10,
+        "wall_ms": 2707.8,
+        "throughput_proofs_per_sec": 3.69,
+        "serial_single_ms": 269.4
+      },
+      {
+        "load": 25,
+        "wall_ms": 6820.6,
+        "throughput_proofs_per_sec": 3.67,
+        "serial_single_ms": 270.1
+      },
+      {
+        "load": 50,
+        "wall_ms": 13720.5,
+        "throughput_proofs_per_sec": 3.64,
+        "serial_single_ms": 269.0
+      }
+    ],
+    "detected_breaking_points": []
+  }
+}

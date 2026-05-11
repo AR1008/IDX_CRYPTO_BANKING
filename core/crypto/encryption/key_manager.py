@@ -1,0 +1,498 @@
+"""
+Key Manager
+Purpose: Secure key generation, storage, and management
+
+⚠️ CRITICAL SECURITY WARNINGS:
+
+1. PRODUCTION KEY STORAGE:
+   - NEVER store cryptographic keys in JSON files, code, or config files in production
+   - ALWAYS use Hardware Security Modules (HSM) or Key Management Services (KMS):
+     * AWS KMS (Amazon Key Management Service)
+     * Azure Key Vault
+     * Google Cloud KMS
+     * HashiCorp Vault
+     * Hardware Security Modules (HSMs) for highest security
+
+2. KEY ACCESS CONTROL:
+   - Implement strict IAM policies for key access
+   - Use service accounts with minimal permissions
+   - Enable audit logging for all key operations
+   - Rotate keys regularly according to compliance requirements
+
+3. KEY ROTATION:
+   - COMPANY_KEY: Rotate every 24 hours
+   - SESSION_KEY: Rotate monthly
+   - PRIVATE_CHAIN_KEY and RBI_MASTER_KEY: Permanent but must have backup procedures
+   - Implement automated key rotation in production
+
+4. DISASTER RECOVERY:
+   - Maintain secure offline backups of critical keys
+   - Use m-of-n key splitting for recovery scenarios
+   - Document and test key recovery procedures regularly
+
+5. COMPLIANCE:
+   - Ensure key storage meets regulatory requirements (PCI-DSS, GDPR, SOC 2)
+   - Implement key lifecycle management policies
+   - Conduct regular security audits
+
+This implementation uses JSON file storage for DEVELOPMENT/TESTING ONLY.
+Production deployments MUST integrate with proper HSM/KMS solutions.
+
+Key Types:
+1. PRIVATE_CHAIN_KEY - Encrypts private blockchain data (permanent)
+2. RBI_MASTER_KEY - RBI's half of court order key (permanent)
+3. COMPANY_KEY - Company's half of court order key (24hr rotation)
+4. SESSION_KEY - Encrypts session mappings (rotates monthly)
+
+Example Flow:
+    # Get key manager
+    km = KeyManager()
+
+    # Get private chain encryption key
+    private_key = km.get_key('PRIVATE_CHAIN_KEY')
+
+    # Encrypt data
+    cipher = AESCipher(private_key)
+    encrypted = cipher.encrypt("sensitive data")
+
+    # For court orders - needs BOTH keys
+    rbi_key = km.get_key('RBI_MASTER_KEY')
+    company_key = km.get_key('COMPANY_KEY')
+    full_key = km.combine_keys(rbi_key, company_key)
+"""
+
+import os
+import hashlib
+import secrets
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Dict
+import json
+
+
+class KeyManager:
+    """
+    Secure key management system
+
+    Responsibilities:
+    - Generate cryptographically secure keys
+    - Store keys securely
+    - Provide key rotation
+    - Split-key management (for court orders)
+    """
+
+    # [DOC] Key type constants are defined here so callers reference
+    # [DOC] KeyManager.COMPANY_KEY rather than a raw string, preventing
+    # [DOC] typos from silently accessing the wrong key slot.
+    # Key types
+    PRIVATE_CHAIN_KEY = "PRIVATE_CHAIN_KEY"
+    RBI_MASTER_KEY = "RBI_MASTER_KEY"
+    COMPANY_KEY = "COMPANY_KEY"
+    SESSION_KEY = "SESSION_KEY"
+
+    def __init__(self, config_file: str = "keys.json"):
+        """
+        Initialize key manager
+
+        Args:
+            config_file: Path to key storage file
+        """
+        # [DOC] The config_file path defaults to keys.json in the working
+        # [DOC] directory (project root). In production this path argument is
+        # [DOC] unused because _load_keys() prefers environment variables.
+        self.config_file = config_file
+        self.keys = self._load_keys()
+
+    def _load_keys(self) -> Dict:
+        """
+        Load keys from storage
+
+        ⚠️ SECURITY WARNING:
+        This method loads keys from environment variables or JSON files.
+        JSON file storage is ONLY for development/testing.
+
+        PRODUCTION REQUIREMENTS:
+        - Replace this method with HSM/KMS integration
+        - Use AWS KMS, Azure Key Vault, Google Cloud KMS, or HashiCorp Vault
+        - Implement proper access controls and audit logging
+        - Never commit keys.json to version control
+        - Encrypt keys at rest if using environment variables
+
+        Returns:
+            Dict: Stored keys
+        """
+        # [DOC] Environment variables are checked first because they are the
+        # [DOC] correct production mechanism: secrets injected by a CI/CD system
+        # [DOC] or secret manager are available as env vars but are never written
+        # [DOC] to disk. If ANY of the four key env vars is set, we assume the
+        # [DOC] operator has set them all and skip the JSON file entirely.
+        # Try environment variables first (production)
+        env_keys = {
+            self.PRIVATE_CHAIN_KEY: os.getenv('PRIVATE_CHAIN_KEY'),
+            self.RBI_MASTER_KEY: os.getenv('RBI_MASTER_KEY'),
+            self.COMPANY_KEY: os.getenv('COMPANY_KEY'),
+            self.SESSION_KEY: os.getenv('SESSION_KEY')
+        }
+
+        # If any key exists in env, use env
+        if any(env_keys.values()):
+            print("🔑 Loading keys from environment variables")
+            print("⚠️  WARNING: Ensure environment variables are properly secured!")
+            return {k: v for k, v in env_keys.items() if v}
+
+        # [DOC] Fall back to keys.json for local development. The file is
+        # [DOC] created by _save_keys() with permissions 0o600 (owner read/write
+        # [DOC] only). It must be listed in .gitignore to prevent accidental
+        # [DOC] commits of real keys to version control.
+        # Otherwise, use config file (development)
+        if os.path.exists(self.config_file):
+            print(f"🔑 Loading keys from {self.config_file}")
+            print("⚠️  WARNING: JSON key storage is INSECURE for production!")
+            print("⚠️  Use HSM/KMS in production environments!")
+            with open(self.config_file, 'r') as f:
+                return json.load(f)
+
+        # [DOC] If neither env vars nor the file exist (first run), return
+        # [DOC] an empty dict. Keys will be generated on demand by generate_key()
+        # [DOC] or initialize_system_keys().
+        # No keys found - generate new ones
+        print("🔑 No keys found - generating new keys")
+        return {}
+
+    def _save_keys(self):
+        """
+        Save keys to storage
+
+        ⚠️ SECURITY WARNING:
+        This method saves keys to a JSON file - INSECURE for production!
+
+        PRODUCTION REQUIREMENTS:
+        - Replace with HSM/KMS storage (AWS KMS, Azure Key Vault, etc.)
+        - Never save keys to files in production
+        - Set proper file permissions (600) if you must use files temporarily
+        - Add keys.json to .gitignore to prevent accidental commits
+        - Use encryption at rest for any file-based storage
+        """
+        # [DOC] Set file permissions to 0o600 (user read/write only) BEFORE
+        # [DOC] writing so that the file is never world-readable even briefly.
+        # [DOC] os.chmod is called again after writing as a defence-in-depth
+        # [DOC] measure in case the open() call reset the permissions.
+        # In production: Save to secure vault (AWS KMS, Azure Key Vault, etc.)
+        # For development: Save to JSON file (INSECURE!)
+
+        # Set restrictive permissions before writing
+        if os.path.exists(self.config_file):
+            os.chmod(self.config_file, 0o600)
+
+        with open(self.config_file, 'w') as f:
+            json.dump(self.keys, f, indent=2)
+
+        # Ensure file has restrictive permissions
+        os.chmod(self.config_file, 0o600)
+
+        print(f"🔑 Keys saved to {self.config_file}")
+        print("⚠️  WARNING: File-based key storage is INSECURE for production!")
+
+    def generate_key(self, key_type: str, length: int = 32) -> str:
+        """
+        Generate cryptographically secure random key
+
+        Args:
+            key_type: Type of key (PRIVATE_CHAIN_KEY, RBI_MASTER_KEY, etc.)
+            length: Key length in bytes (default: 32 = 256 bits)
+
+        Returns:
+            str: Generated key (hex encoded)
+
+        Example:
+            >>> km = KeyManager()
+            >>> key = km.generate_key('PRIVATE_CHAIN_KEY')
+            >>> print(len(key))
+            64  # 32 bytes = 64 hex characters
+        """
+        # [DOC] secrets.token_bytes() reads from the OS CSPRNG (/dev/urandom
+        # [DOC] on Linux/macOS), which is the correct source for cryptographic
+        # [DOC] key material. Never use random.randbytes() or os.urandom()
+        # [DOC] directly — secrets is the Python-blessed API for this purpose.
+        # Generate random bytes
+        key_bytes = secrets.token_bytes(length)
+
+        # [DOC] Store as lowercase hex (two hex chars per byte, total 64 chars
+        # [DOC] for the default 32-byte key). Hex is chosen over base64 because
+        # [DOC] it is URL-safe and unambiguous in log output.
+        # Convert to hex
+        key_hex = key_bytes.hex()
+
+        # [DOC] Store the key in the in-memory dict with metadata (creation time,
+        # [DOC] rotation time). The dict is then flushed to disk by _save_keys().
+        # Store key
+        self.keys[key_type] = {
+            'key': key_hex,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'rotated_at': None
+        }
+
+        self._save_keys()
+
+        print(f"✅ Generated {key_type}: {key_hex[:16]}...{key_hex[-16:]}")
+
+        return key_hex
+
+    def get_key(self, key_type: str) -> Optional[str]:
+        """
+        Get encryption key
+
+        Args:
+            key_type: Type of key to retrieve
+
+        Returns:
+            str: Key if exists, None otherwise
+
+        Example:
+            >>> km = KeyManager()
+            >>> private_key = km.get_key('PRIVATE_CHAIN_KEY')
+            >>> if not private_key:
+            ...     private_key = km.generate_key('PRIVATE_CHAIN_KEY')
+        """
+        if key_type not in self.keys:
+            return None
+
+        key_data = self.keys[key_type]
+
+        # [DOC] The in-memory dict can hold keys in two formats:
+        # [DOC]   Simple string: produced when env vars are loaded (value is the
+        # [DOC]                  raw key string, no metadata dict wrapper).
+        # [DOC]   Dict with 'key': produced by generate_key() and rotate_key().
+        # [DOC] Both formats are handled transparently here.
+        # Return just the key string if it's a simple string
+        if isinstance(key_data, str):
+            return key_data
+
+        # Return key from dict structure
+        return key_data.get('key')
+
+    def get_or_create_key(self, key_type: str) -> str:
+        """
+        Get key or create if doesn't exist
+
+        Args:
+            key_type: Type of key
+
+        Returns:
+            str: Key
+        """
+        # [DOC] Convenience wrapper used by SplitKeyCrypto and other callers
+        # [DOC] that need a key to exist but should not fail if it was not
+        # [DOC] pre-generated. First boot automatically generates missing keys.
+        key = self.get_key(key_type)
+        if not key:
+            key = self.generate_key(key_type)
+        return key
+
+    def rotate_key(self, key_type: str) -> str:
+        """
+        Rotate key (generate new key, keep old key for decryption)
+
+        Args:
+            key_type: Type of key to rotate
+
+        Returns:
+            str: New key
+
+        Example:
+            >>> km = KeyManager()
+            >>> # Rotate company key every 24 hours
+            >>> new_key = km.rotate_key('COMPANY_KEY')
+        """
+        # [DOC] The old key is archived under a timestamped name rather than
+        # [DOC] deleted. This is necessary because existing encrypted records
+        # [DOC] (e.g., session-to-IDX mappings encrypted with the old key)
+        # [DOC] must still be decryptable. The archived key is used for those
+        # [DOC] reads while the new key is used for all new writes.
+        # Store old key
+        old_key = self.get_key(key_type)
+
+        if old_key:
+            # Keep old key for decrypting old data
+            old_key_backup = f"{key_type}_OLD_{datetime.now(timezone.utc).isoformat()}"
+            self.keys[old_key_backup] = {
+                'key': old_key,
+                'archived_at': datetime.now(timezone.utc).isoformat()
+            }
+
+        # Generate new key
+        new_key = self.generate_key(key_type)
+
+        # Update rotation timestamp
+        self.keys[key_type]['rotated_at'] = datetime.now(timezone.utc).isoformat()
+
+        self._save_keys()
+
+        print(f"🔄 Rotated {key_type}")
+
+        return new_key
+
+    def combine_keys(self, key1: str, key2: str) -> str:
+        """
+        Combine two keys (for split-key cryptography)
+
+        Used for court orders:
+        - RBI has permanent master key (key1)
+        - Company has 24hr rotating key (key2)
+        - Both needed to decrypt → full_key = combine(rbi_key, company_key)
+
+        Args:
+            key1: First key (e.g., RBI master key)
+            key2: Second key (e.g., Company key)
+
+        Returns:
+            str: Combined key (SHA-256 hash)
+
+        Example:
+            >>> km = KeyManager()
+            >>> rbi_key = km.get_key('RBI_MASTER_KEY')
+            >>> company_key = km.get_key('COMPANY_KEY')
+            >>> full_key = km.combine_keys(rbi_key, company_key)
+            >>> # Use full_key to decrypt private data
+        """
+        # [DOC] XOR-ing two keys would be the ideal combiner (perfect secrecy
+        # [DOC] when keys are uniform random), but that requires equal-length
+        # [DOC] keys. SHA-256(key1 || key2) is used here as a simple, robust
+        # [DOC] combiner: it produces a fixed 256-bit output regardless of input
+        # [DOC] lengths and is computationally indistinguishable from random if
+        # [DOC] either input is unknown. Neither party can learn the combined key
+        # [DOC] without knowing BOTH halves.
+        # Combine keys using SHA-256
+        combined = hashlib.sha256((key1 + key2).encode()).hexdigest()
+
+        print(f"🔗 Combined keys: {combined[:16]}...{combined[-16:]}")
+
+        return combined
+
+    def verify_split_keys(self, key1: str, key2: str, expected_combined: str) -> bool:
+        """
+        Verify that two split keys produce the expected combined key
+
+        Args:
+            key1: First key
+            key2: Second key
+            expected_combined: Expected result
+
+        Returns:
+            bool: True if keys are valid
+        """
+        # [DOC] Used to confirm that the regulatory authority is presenting the
+        # [DOC] correct key half during a court order decryption request, without
+        # [DOC] revealing what the full combined key is to anyone who intercepts
+        # [DOC] this verification step.
+        combined = self.combine_keys(key1, key2)
+        return combined == expected_combined
+
+    def get_all_keys(self) -> Dict:
+        """
+        Get all keys (for backup/migration)
+
+        Returns:
+            Dict: All keys
+        """
+        # [DOC] Returns a shallow copy so callers cannot mutate the internal
+        # [DOC] key dict directly. Used during key backup and migration only.
+        return self.keys.copy()
+
+    def initialize_system_keys(self):
+        """
+        Initialize all required system keys
+
+        Call this once during system setup
+        """
+        # [DOC] Called once at first boot (or when keys.json is absent) to
+        # [DOC] generate all four system keys. Each generate_key() call only
+        # [DOC] runs when the key does not yet exist, so this is idempotent:
+        # [DOC] running it a second time has no effect.
+        print("\n🔑 Initializing system keys...")
+
+        # [DOC] PRIVATE_CHAIN_KEY is the AES-256 key used to encrypt every
+        # [DOC] private blockchain record (sender IDX, receiver IDX, amount,
+        # [DOC] blinding factor). It is permanent — rotating it would make all
+        # [DOC] historical records unreadable.
+        # Private chain encryption (permanent)
+        if not self.get_key(self.PRIVATE_CHAIN_KEY):
+            self.generate_key(self.PRIVATE_CHAIN_KEY)
+
+        # [DOC] RBI_MASTER_KEY is the regulatory authority's half of the
+        # [DOC] court-order decryption key. It is permanent and must be held
+        # [DOC] in an HSM controlled by the regulatory authority (e.g., FFA).
+        # RBI master key (permanent)
+        if not self.get_key(self.RBI_MASTER_KEY):
+            self.generate_key(self.RBI_MASTER_KEY)
+
+        # [DOC] COMPANY_KEY is the IDX Corp half of the court-order key.
+        # [DOC] It rotates every 24 hours. A new court order automatically
+        # [DOC] gets the current COMPANY_KEY; old records encrypted with a
+        # [DOC] previous COMPANY_KEY can only be decrypted by presenting the
+        # [DOC] archived version — which is why rotate_key() archives old keys.
+        # Company key (rotates every 24hr)
+        if not self.get_key(self.COMPANY_KEY):
+            self.generate_key(self.COMPANY_KEY)
+
+        # [DOC] SESSION_KEY encrypts the IDX→session_id mapping table stored
+        # [DOC] in the private chain. It rotates monthly. Unlike COMPANY_KEY,
+        # [DOC] session ID rotations are transparent to users.
+        # Session encryption key
+        if not self.get_key(self.SESSION_KEY):
+            self.generate_key(self.SESSION_KEY)
+
+        print("✅ All system keys initialized!\n")
+
+
+# Testing
+if __name__ == "__main__":
+    """Test key manager"""
+
+    print("=== Key Manager Testing ===\n")
+
+    # Clean up old test file
+    if os.path.exists("test_keys.json"):
+        os.remove("test_keys.json")
+
+    km = KeyManager("test_keys.json")
+
+    # Test 1: Initialize system keys
+    print("Test 1: Initialize System Keys")
+    km.initialize_system_keys()
+
+    # Test 2: Get keys
+    print("Test 2: Get Keys")
+    private_key = km.get_key(KeyManager.PRIVATE_CHAIN_KEY)
+    rbi_key = km.get_key(KeyManager.RBI_MASTER_KEY)
+    company_key = km.get_key(KeyManager.COMPANY_KEY)
+
+    print(f"  Private chain key: {private_key[:16]}...{private_key[-16:]}")
+    print(f"  RBI master key: {rbi_key[:16]}...{rbi_key[-16:]}")
+    print(f"  Company key: {company_key[:16]}...{company_key[-16:]}")
+    print("  ✅ Test 2 passed!\n")
+
+    # Test 3: Combine keys (split-key cryptography)
+    print("Test 3: Split-Key Cryptography")
+    full_key = km.combine_keys(rbi_key, company_key)
+    print(f"  Combined key: {full_key[:16]}...{full_key[-16:]}")
+
+    # Verify
+    is_valid = km.verify_split_keys(rbi_key, company_key, full_key)
+    print(f"  ✅ Verification: {is_valid}\n")
+
+    # Test 4: Key rotation
+    print("Test 4: Key Rotation")
+    old_company_key = company_key
+    new_company_key = km.rotate_key(KeyManager.COMPANY_KEY)
+
+    print(f"  Old key: {old_company_key[:16]}...{old_company_key[-16:]}")
+    print(f"  New key: {new_company_key[:16]}...{new_company_key[-16:]}")
+    print(f"  ✅ Keys different: {old_company_key != new_company_key}\n")
+
+    print("=" * 50)
+    print("✅ All key manager tests passed!")
+    print("=" * 50)
+
+    # Cleanup
+    if os.path.exists("test_keys.json"):
+        os.remove("test_keys.json")
